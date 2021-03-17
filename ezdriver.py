@@ -6,6 +6,7 @@ from selenium.common.exceptions import NoSuchElementException
 # from pyvirtualdisplay import Display
 from selenium.webdriver.chrome.webdriver import WebDriver
 
+from ini_reader import IniReader
 from xpath_getter import NaverXpath, CoupangXpath
 
 
@@ -13,8 +14,8 @@ class EzDriver:
     # selenium driver setting
     __naver_path = NaverXpath.url
     __coupang_path = CoupangXpath.url
-    __driver_path = 'C:\chromedriver'
-    __service_log_path = "./log/chromedriver.log"
+    __driver_path = IniReader.DRIVER_PATH
+    __service_log_path = "log/chromedriver.log"
     __service_args = ['--verbose']
 
     __implicitly_wait_time = 3

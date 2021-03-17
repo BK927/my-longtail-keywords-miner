@@ -1,5 +1,5 @@
 # My longtail keywords miner
-Crossplatform crawler for Naver storefarm service and Coupang.
+A crossplatform crawler for Naver storefarm service and Coupang.
 
 ## Mendatory
 Before using this program, you have to get Naver api licenses.</br>
@@ -21,6 +21,8 @@ CUSTOMER_ID = </br>
 ### [NAVER SEARCH API]</br>
 CLIENT_ID = </br>
 CLIENT_SECRET = </br>
+### [DRIVER]</br>
+DRIVER_PATH = C:\chromedriver</br>
 
 ## Usage
 Crawled datas will be saved in Excel file(*.xlxs)</br>

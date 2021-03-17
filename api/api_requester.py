@@ -6,15 +6,14 @@ import urllib.request
 from urllib.request import Request, urlopen
 from urllib.parse import urlencode
 
-import signaturehelper
-from api.api_key_reader import *
+from api import signaturehelper
+from ini_reader import *
 from ezlogger import EzLogger
 
 
 class NaverApi:
     MAX_RETRY = 20
     TIMEOUT = 10
-    api = ApiKeyReader()
 
     @staticmethod
     def get_header(method, uri, api_key, secret_key, customer_id):
@@ -25,8 +24,6 @@ class NaverApi:
 
     @staticmethod
     def get_monthly_qc_cnt(keyword):
-        api = NaverApi.api
-
         # Keywords Retrieve
         uri = '/keywordstool'
         method = 'GET'
@@ -37,8 +34,8 @@ class NaverApi:
         for tries in range(NaverApi.MAX_RETRY):
             try:
                 # 질의 json->파이썬 객체로 파싱
-                response = requests.get(url, headers=NaverApi.get_header(method, uri, api.API_KEY, api.SECRET_KEY,
-                                                                         api.CUSTOMER_ID), timeout=NaverApi.TIMEOUT)
+                response = requests.get(url, headers=NaverApi.get_header(method, uri, IniReader.API_KEY, IniReader.SECRET_KEY,
+                                                                         IniReader.CUSTOMER_ID), timeout=NaverApi.TIMEOUT)
 
                 if not int(response.status_code) == 200:
                     time.sleep(0.5)
@@ -80,15 +77,13 @@ class NaverApi:
 
     @staticmethod
     def get_quantity_of_items(keyword):
-        api = NaverApi.api
-
         encText = urllib.parse.quote(keyword)
         url = "https://openapi.naver.com/v1/search/shop.json?query=" + encText
 
         # 네이버 검색 API에 질의
         request = Request(url)
-        request.add_header("X-Naver-Client-Id", api.CLIENT_ID)
-        request.add_header("X-Naver-Client-Secret", api.CLIENT_SECRET)
+        request.add_header("X-Naver-Client-Id", IniReader.CLIENT_ID)
+        request.add_header("X-Naver-Client-Secret", IniReader.CLIENT_SECRET)
 
         for tries in range(NaverApi.MAX_RETRY):
             try:
