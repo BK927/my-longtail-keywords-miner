@@ -14,6 +14,7 @@ from ezlogger import EzLogger
 class NaverApi:
     MAX_RETRY = 20
     TIMEOUT = 10
+    CODE429_WAIT_TIME = 2
 
     @staticmethod
     def get_header(method, uri, api_key, secret_key, customer_id):
@@ -27,33 +28,41 @@ class NaverApi:
         # Keywords Retrieve
         uri = '/keywordstool'
         method = 'GET'
-        url = api.BASE_URL + uri + f'?hintKeywords={keyword}&showDetail=1'
+        url = IniReader.BASE_URL + uri + f'?hintKeywords={keyword}&showDetail=1'
 
         response = None
 
         for tries in range(NaverApi.MAX_RETRY):
             try:
                 # 질의 json->파이썬 객체로 파싱
-                response = requests.get(url, headers=NaverApi.get_header(method, uri, IniReader.API_KEY, IniReader.SECRET_KEY,
+                response = requests.get(url, headers=NaverApi.get_header(method, uri, IniReader.API_KEY,
+                                                                         IniReader.SECRET_KEY,
                                                                          IniReader.CUSTOMER_ID), timeout=NaverApi.TIMEOUT)
-
-                if not int(response.status_code) == 200:
-                    time.sleep(0.5)
-                    continue
             except Exception as e:
                 EzLogger.logfile(logging.WARNING, str(e) + f',get_monthly_qc_cnt:{url}')
-                print(str(e) + f',get_monthly_qc_cnt:{url}')
                 if tries < (NaverApi.MAX_RETRY - 1):
+                    time.sleep(NaverApi.CODE429_WAIT_TIME)
                     continue
                 else:
                     EzLogger.logfile(logging.WARNING,
                                      f'Has tried {NaverApi.MAX_RETRY} times to access url {url}, all failed!')
-                    print(f'Has tried {NaverApi.MAX_RETRY} times to access url {url}, all failed!')
                     return -1
+            if int(response.status_code) == 200:
+                break
+            if int(response.status_code) == 429:
+                EzLogger.logfile(logging.WARNING,
+                                 f'keyword:{keyword} try:{tries} get_monthly_qc_cnt got {str(response.status_code)}')
+                time.sleep(NaverApi.CODE429_WAIT_TIME)
+                continue
+            if not int(response.status_code) == 200:
+                EzLogger.logfile(logging.WARNING,
+                                 f'keyword:{keyword} try:{tries} get_monthly_qc_cnt got {str(response.status_code)}')
+                time.sleep(0.5)
+                continue
 
         if not int(response.status_code) == 200:
-            EzLogger.logfile(logging.WARNING, f'get_monthly_qc_cnt got {str(response.status_code)}')
-            print(f'get_monthly_qc_cnt got {str(response.status_code)}')
+            EzLogger.logfile(logging.WARNING,
+                             f'get_monthly_qc_cnt: Has tried {NaverApi.MAX_RETRY} times to access url {url}, but got {str(response.status_code)}')
             return -1
 
         # 원하는 키워드만 딕셔너리로 가져오기
@@ -64,13 +73,9 @@ class NaverApi:
         # 10보다 적으면 <10으로 표시되기 때문에 체크
         if not data['monthlyPcQcCnt'] == '< 10':
             pc_query_count = int(data['monthlyPcQcCnt'])
-        else:
-            print(data['monthlyPcQcCnt'])
 
         if not data['monthlyMobileQcCnt'] == '< 10':
             mobile_query_count = int(data['monthlyMobileQcCnt'])
-        else:
-            print(data['monthlyMobileQcCnt'])
 
         # PC랑 모바일 검색수 합계
         return pc_query_count + mobile_query_count
@@ -85,28 +90,37 @@ class NaverApi:
         request.add_header("X-Naver-Client-Id", IniReader.CLIENT_ID)
         request.add_header("X-Naver-Client-Secret", IniReader.CLIENT_SECRET)
 
+        response = None
+
         for tries in range(NaverApi.MAX_RETRY):
             try:
                 # 질의 json->파이썬 객체로 파싱
                 response = urlopen(request, timeout=NaverApi.TIMEOUT)
-                search_result = json.loads(response.read().decode('utf-8'))
-
-                if not int(response.getcode()) == 200:
-                    time.sleep(0.5)
-                    continue
-
-                return search_result['total']
             except Exception as e:
                 EzLogger.logfile(logging.WARNING, str(e) + f',get_quantity_of_items:{url}')
-                print(str(e) + f',get_quantity_of_items:{url}')
                 if tries < (NaverApi.MAX_RETRY - 1):
                     continue
                 else:
                     EzLogger.logfile(logging.WARNING,
                                      f'Has tried {NaverApi.MAX_RETRY} times to access url {url}, all failed!')
-                    print(f'Has tried {NaverApi.MAX_RETRY} times to access url {url}, all failed!')
                     return -1
 
-        EzLogger.logfile(logging.WARNING, 'get_quantity_of_items doesn\'t response correctly.')
-        print('get_quantity_of_items doesn\'t response correctly.')
-        return -1
+            if int(response.getcode()) == 200:
+                break
+            if int(response.getcode()) == 429:
+                EzLogger.logfile(logging.WARNING,
+                                 f'keyword:{keyword} try:{tries} get_quantity_of_items got {str(response.getcode())}')
+                time.sleep(NaverApi.CODE429_WAIT_TIME)
+                continue
+            if not int(response.getcode()) == 200:
+                EzLogger.logfile(logging.WARNING,
+                                 f'keyword:{keyword} try:{tries} get_quantity_of_items got {str(response.getcode())}')
+                time.sleep(0.5)
+                continue
+
+        if not int(response.getcode()) == 200:
+            EzLogger.logfile(logging.WARNING,
+                             f'get_quantity_of_items: Has tried {NaverApi.MAX_RETRY} times to access url {url}, but got {str(response.getcode())}')
+            return -1
+
+        return json.loads(response.read().decode('utf-8'))['total']

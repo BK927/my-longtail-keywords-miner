@@ -15,7 +15,7 @@ import configparser
 
 class IniReader:
     __config = configparser.ConfigParser()
-    __config.read('api_key.ini')
+    __config.read('configure.ini')
 
     # NAVER ADS API
     BASE_URL = __config['NAVER ADS API']['BASE_URL']
@@ -29,3 +29,5 @@ class IniReader:
 
     # Chromedriver
     DRIVER_PATH = __config['DRIVER']['DRIVER_PATH']
+    HEADLESS = __config['DRIVER']['HEADLESS']
+    NO_SANDBOX = __config['DRIVER']['NO_SANDBOX']

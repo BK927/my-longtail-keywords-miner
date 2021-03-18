@@ -1,13 +1,16 @@
-import random
-import time
+import platform
 
 from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException
-# from pyvirtualdisplay import Display
 from selenium.webdriver.chrome.webdriver import WebDriver
 
 from ini_reader import IniReader
-from xpath_getter import NaverXpath, CoupangXpath
+from xpath_container import NaverXpath, CoupangXpath
+
+try:
+    from pyvirtualdisplay import Display
+except:
+    pass
 
 
 class EzDriver:
@@ -18,17 +21,23 @@ class EzDriver:
     __service_log_path = "log/chromedriver.log"
     __service_args = ['--verbose']
 
-    __implicitly_wait_time = 3
+    __WAIT_TIME = 3
 
     def __init__(self):
         self.__driver = self._init_driver()
         self.__tabs = self._init_pages()
 
     def _init_driver(self) -> WebDriver:
+        if platform.system() == 'Linux':
+            display = Display(visible=True, size=(1920, 1080))
+            display.start()
+
         options = webdriver.ChromeOptions()
         # headless 옵션 설정
-        options.add_argument('headless')
-        options.add_argument("no-sandbox")
+        if IniReader.HEADLESS == 'TRUE':
+            options.add_argument('headless')
+        if IniReader.NO_SANDBOX == 'TRUE':
+            options.add_argument("no-sandbox")
 
         # 브라우저 윈도우 사이즈
         options.add_argument('window-size=1920x1080')
@@ -45,7 +54,7 @@ class EzDriver:
                                   service_log_path=EzDriver.__service_log_path,
                                   chrome_options=options)
 
-        driver.implicitly_wait(self.__implicitly_wait_time)
+        driver.implicitly_wait(self.__WAIT_TIME)
 
         return driver
 
@@ -71,7 +80,7 @@ class EzDriver:
         except NoSuchElementException:
             return False
         finally:
-            self.__driver.implicitly_wait(self.__implicitly_wait_time)
+            self.__driver.implicitly_wait(self.__WAIT_TIME)
         return True
 
     def switch_to_coupang(self):

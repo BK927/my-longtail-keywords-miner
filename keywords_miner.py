@@ -7,7 +7,7 @@ from selenium.common.exceptions import NoSuchElementException
 from api.api_requester import NaverApi
 from category_enum import Category
 from ezdriver import EzDriver
-from xpath_getter import NaverXpath, CoupangXpath
+from xpath_container import NaverXpath, CoupangXpath
 
 
 class KeywordsMiner(QThread):
@@ -81,6 +81,7 @@ class KeywordsMiner(QThread):
         keywords_dic = {'분류': [], '키워드': [], '검색 수': [], '네이버 상품 수': [], '쿠팡 상품 수': []}
         return keywords_dic
 
+    # TODO: 끝에 메인 UI와 싱크 추가
     def mine_keywords(self, category: Category, index: int) -> {}:
         keywords_dic = self.__create_empty_keywords_dic()
         self.click_item(category, index)
@@ -141,6 +142,7 @@ class KeywordsMiner(QThread):
             # 다음 페이지 넘기기
             self.__driver.click(NaverXpath.next_page_btn)
 
+    # TODO: 분류이름 버그 수정
     def _crawl_keywords_recursive(self, category: Category, keywords_dic) -> None:
         if not self.__driver.check_exists_by_xpath(NaverXpath.get_combobox(category.value)):
             return

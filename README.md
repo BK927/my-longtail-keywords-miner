@@ -23,6 +23,8 @@ CLIENT_ID = </br>
 CLIENT_SECRET = </br>
 ### [DRIVER]</br>
 DRIVER_PATH = C:\chromedriver</br>
+HEADLESS = TRUE
+NO_SANDBOX = TRUE
 
 ## Usage
 Crawled datas will be saved in Excel file(*.xlxs)</br>
