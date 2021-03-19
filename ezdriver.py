@@ -3,7 +3,9 @@ import platform
 from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.chrome.webdriver import WebDriver
+from typing import List, Tuple
 
+from category_enum import Category
 from ini_reader import IniReader
 from xpath_container import NaverXpath, CoupangXpath
 
@@ -73,8 +75,8 @@ class EzDriver:
         self.__driver.switch_to.window(tabs['naver'])
         return tabs
 
-    def check_exists_by_xpath(self, xpath):
-        self.__driver.implicitly_wait(0.2)
+    def check_exists_by_xpath(self, xpath, waiting_time=0.2) -> bool:
+        self.__driver.implicitly_wait(waiting_time)
         try:
             self.__driver.find_element_by_xpath(xpath)
         except NoSuchElementException:
@@ -83,29 +85,119 @@ class EzDriver:
             self.__driver.implicitly_wait(self.__WAIT_TIME)
         return True
 
-    def switch_to_coupang(self):
+    def get_number_of_products_from_coupang(self, keyword: str) -> int:
+        self._clear_searchbox(CoupangXpath.search_box)
+        self._search(CoupangXpath.search_box)
+        if self.check_exists_by_xpath(CoupangXpath.number_of_items):
+            text = self.__driver.find_element_by_xpath(CoupangXpath.number_of_items).text.replace(',', '')
+            return int(text)
+
+        return -1
+
+    def get_current_category(self) -> Category:
+        last_combobox = 1
+
+        for i in range(1, 4):
+            if self.check_exists_by_xpath(NaverXpath.get_combobox(i)):
+                last_combobox = i
+
+        return Category(last_combobox)
+
+    def get_current_category_list(self) -> [str]:
+        category: Category = self.get_current_category()
+
+        # open combobox
+        self.__driver.find_element_by_xpath(NaverXpath.get_combobox(category.value)).click()
+
+        elements = self.__driver.find_elements_by_xpath(NaverXpath.get_comboxbox_list(category.value))
+        category_ls = []
+
+        for element in elements:
+            category_ls.append(element.text)
+
+        # close combobox
+        self.__driver.find_element_by_xpath(NaverXpath.get_combobox(category.value)).click()
+
+        return category_ls
+
+    def get_category_list(self, query_list: List[Tuple[Category, int]]) -> List[str]:
+        sorted(query_list, key=lambda item: item[0].value)
+
+        category_ls = []
+
+        for t in query_list:
+            self.__driver.find_element_by_xpath(NaverXpath.get_combobox(t[0].value)).click()
+            self.__driver.find_element_by_xpath(NaverXpath.get_comboxbox_element(t[0].value, t[1]))
+
+        # open combobox
+        self.__driver.find_element_by_xpath(NaverXpath.get_comboxbox_list(query_list[-1][0].value)).click()
+        elements = self.__driver.find_elements_by_xpath(NaverXpath.get_comboxbox_list(query_list[-1][0].value))
+        category_ls = []
+
+        for element in elements:
+            category_ls.append(element.text)
+
+        # close combobox
+        self.__driver.find_element_by_xpath(NaverXpath.get_comboxbox_list(query_list[-1][0].value)).click()
+
+        return category_ls
+
+    def get_current_page_keywords(self, delay=1) -> List[str]:
+        # 키워드 크롤링 구문
+        for p in range(0, 25):
+            # 인기검색어 가져오기
+            for i in range(1, 21):
+                if not self.isRun:
+                    return
+
+                if not self.__driver.check_exists_by_xpath(NaverXpath.get_keyword(i)):
+                    break
+                raw = self.__driver.get_text(NaverXpath.get_keyword(i))
+                keyword = raw.split('\n')[1]
+
+                keywords_dic['분류'].append(category_text)
+                keywords_dic['키워드'].append(keyword)
+
+                monthly_qc_cnt = NaverApi.get_monthly_qc_cnt(keyword)
+                keywords_dic['검색 수'].append(monthly_qc_cnt)
+
+                naver_items = NaverApi.get_quantity_of_items(keyword)
+                keywords_dic['네이버 상품 수'].append(naver_items)
+
+                self.__driver.switch_to_coupang()
+                self.__driver.clear_searchbox(CoupangXpath.search_box)
+                self.__driver.search(CoupangXpath.search_box, keyword)
+                try:
+                    coupamg_items = int(self.__driver.get_text(CoupangXpath.number_of_items).replace(',', ''))
+                    keywords_dic['쿠팡 상품 수'].append(coupamg_items)
+                except NoSuchElementException:
+                    keywords_dic['쿠팡 상품 수'].append(0)
+
+                # update subscribers
+                delay = random.uniform(1, 2)
+                self.__driver.switch_to_naver()
+
+                self.update.emit(category_text, keyword, monthly_qc_cnt, naver_items, coupamg_items, delay)
+
+                time.sleep(delay)
+
+            # 다음 페이지 넘기기
+            self.__driver.click(NaverXpath.next_page_btn)
+
+    def _switch_to_coupang(self) -> None:
         self.__driver.switch_to.window(self.__tabs['coupang'])
 
-    def switch_to_naver(self):
+    def _switch_to_naver(self) -> None:
         self.__driver.switch_to.window(self.__tabs['naver'])
 
-    def search(self, xpath: str, keyword: str):
+    def _search(self, xpath: str, keyword: str) -> None:
         form = self.__driver.find_element_by_xpath(xpath)
         form.send_keys(keyword)
         form.submit()
 
-    def clear_searchbox(self, xpath: str) -> None:
+    def _clear_searchbox(self, xpath: str) -> None:
         form = self.__driver.find_element_by_xpath(xpath)
         form.clear()
 
-    def click(self, xpath):
-        self.__driver.find_element_by_xpath(xpath).click()
-
-    def get_text(self, xpath):
-        return self.__driver.find_element_by_xpath(xpath).text
-
-    def find_elements(self, xpath):
-        return self.__driver.find_elements_by_xpath(xpath)
-
-    def quit(self):
+    def quit(self) -> None:
         self.__driver.quit()

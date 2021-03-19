@@ -23,7 +23,7 @@ CLIENT_ID = </br>
 CLIENT_SECRET = </br>
 ### [DRIVER]</br>
 DRIVER_PATH = C:\chromedriver</br>
-HEADLESS = TRUE
+HEADLESS = TRUE</br>
 NO_SANDBOX = TRUE
 
 ## Usage
