@@ -1,3 +1,4 @@
+import os
 import platform
 
 from selenium import webdriver
@@ -21,13 +22,15 @@ class BaseDriver:
     __WAIT_TIME = 3
 
     def __init__(self):
+        self._display = None
         self._driver = self._init_driver()
 
-    def _init_driver(self) -> WebDriver:
+    def __del__(self):
+        self._driver.quit()
         if platform.system() == 'Linux':
-            display = Display(visible=False, size=(1920, 1080))
-            display.start()
+            self._display.stop()
 
+    def _init_driver(self) -> WebDriver:
         options = webdriver.ChromeOptions()
         # headless 옵션 설정
         if IniReader.HEADLESS == 'TRUE':
@@ -45,10 +48,19 @@ class BaseDriver:
             'user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36 (KHTML, like Gecko) '
             'Chrome/61.0.3163.100 Safari/537.36')  # user-agent 이름 설정
 
+        orig = None
+        if platform.system() == 'Linux':
+            orig = os.environ["DISPLAY"]
+            self._display = Display(visible=False, size=(1920, 1080))
+            self._display.start()
+
         driver = webdriver.Chrome(BaseDriver.__driver_path,
                                   service_args=BaseDriver.__service_args,
                                   service_log_path=BaseDriver.__service_log_path,
                                   chrome_options=options)
+
+        if platform.system() == 'Linux':
+            os.environ["DISPLAY"] = orig
 
         driver.implicitly_wait(self.__WAIT_TIME)
 

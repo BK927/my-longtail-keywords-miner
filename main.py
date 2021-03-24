@@ -9,13 +9,21 @@ from PyQt5 import uic
 import pandas as pd
 from typing import List, Tuple
 
+if not os.path.exists('./log'):
+    os.mkdir('./log')
+
 from crawler.crawling_driver import CrawlingDriver
 from worker.category_name_worker import CategoryNameWorker
 from worker.keywords_worker import KeywordsWorker
 from crawler.naver_cache_driver import NaverCacheDriver
 
 main_window = uic.loadUiType('./ui/main_window.ui')[0]
-debug_window = uic.loadUiType('./ui/debug_window.ui')
+
+logging.basicConfig(filename='./log/debug.log',
+                    filemode='a',
+                    format='%(asctime)s - %(thread)d - %(levelname)s - %(message)s',
+                    datefmt='%H:%M:%S',
+                    level=logging.DEBUG)
 
 
 class MainWindow(QMainWindow, main_window):
@@ -188,7 +196,7 @@ class MainWindow(QMainWindow, main_window):
     def _create_keywords_miner(self, index: Tuple[int, int, int, int]) -> KeywordsWorker:
         if self._miner is None:
             self._miner = KeywordsWorker(self._crawling_driver, index,
-                                   recursive=self.RecursivieChkBox.isChecked(), parent=self)
+                                         recursive=self.RecursivieChkBox.isChecked(), parent=self)
             self._miner.update.connect(self._update)
             self._miner.save_crawled_data.connect(self._save_datatable)
             self._miner.crawling_finished.connect(self.stop_crawling)
@@ -199,13 +207,4 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
     main_window = MainWindow()
     main_window.show()
-
-    if not os.path.exists('./log'):
-        os.mkdir('./log')
-    logging.basicConfig(filename='./log/debug.log',
-                        filemode='a',
-                        format='%(asctime)s - %(thread)d - %(levelname)s - %(message)s',
-                        datefmt='%H:%M:%S',
-                        level=logging.DEBUG)
-
     app.exec_()

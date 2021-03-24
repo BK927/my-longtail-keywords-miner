@@ -210,6 +210,9 @@
           <property name="text">
            <string>하위 카테고리도 수집</string>
           </property>
+          <property name="checked">
+           <bool>true</bool>
+          </property>
          </widget>
         </item>
        </layout>
@@ -376,7 +379,7 @@
      <x>0</x>
      <y>0</y>
      <width>1023</width>
-     <height>26</height>
+     <height>20</height>
     </rect>
    </property>
   </widget>
