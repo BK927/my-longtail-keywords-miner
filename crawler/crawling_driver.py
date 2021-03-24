@@ -50,14 +50,14 @@ class CrawlingDriver(BaseDriver):
             yield data
 
         index_ls = list(index)
-        position = NaverCacheDriver.convert_to_current_position(index)
+        position = self.__cache_driver.convert_to_current_position(index)
         depth = position[0] + 1
         index_stack = [1]
 
         while len(index_stack) > 0 and depth <= 3:
             i = index_stack.pop()
             index_ls[depth - 1] = i
-            category_name = NaverCacheDriver.get_category_name(tuple(index_ls))
+            category_name = self.__cache_driver.get_category_name(tuple(index_ls))
             self._set_naver_category(tuple(index_ls))
             for t in self._crawl_current_category(category_name):
                 yield t
@@ -79,7 +79,7 @@ class CrawlingDriver(BaseDriver):
     def crawl_keywords(self, index: Tuple[int, int, int, int]):
         self._switch_to_naver()
         self._set_naver_category(index)
-        category_name = NaverCacheDriver.get_category_name(index)
+        category_name = self.__cache_driver.get_category_name(index)
         for t in self._crawl_current_category(category_name):
             yield t
 
@@ -136,4 +136,4 @@ class CrawlingDriver(BaseDriver):
             time.sleep(0.3)
             self._driver.find_element_by_xpath(NaverXpath.get_comboxbox_element(i + 1, index[i])).click()
         self._driver.find_element_by_xpath(NaverXpath.lookup_btn).click()
-        time.sleep(0.3)
+        time.sleep(0.5)

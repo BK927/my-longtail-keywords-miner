@@ -21,7 +21,7 @@ class NaverCacheDriver(BaseDriver):
             cls._init = True
             super().__init__()
             self._init_page()
-            self.load_category()
+            self.try_to_load_cache()
 
     @staticmethod
     def encode(index: Tuple[int, int, int, int]) -> str:
@@ -45,11 +45,6 @@ class NaverCacheDriver(BaseDriver):
         return tuple(index_ls)
 
     @staticmethod
-    def get_category_name(index: Tuple[int, int, int, int]) -> str:
-        code = NaverCacheDriver.encode(index)
-        return NaverCacheDriver._categories[code]
-
-    @staticmethod
     def convert_to_current_depth(index: Tuple[int, int, int, int]) -> int:
         position = NaverCacheDriver.convert_to_current_position(index)
         return position[0]
@@ -65,15 +60,11 @@ class NaverCacheDriver(BaseDriver):
             depth += 1
         return depth, last_index
 
-    @staticmethod
-    def is_available() -> bool:
-        if NaverCacheDriver._categories is None:
-            return False
-        else:
-            return True
+    def get_category_name(self, index: Tuple[int, int, int, int]) -> str:
+        code = NaverCacheDriver.encode(index)
+        return NaverCacheDriver._categories[code]
 
-    @staticmethod
-    def get_next_category_list(index: Tuple[int, int, int, int]) -> list:
+    def get_next_category_list(self, index: Tuple[int, int, int, int]) -> list:
         depth = NaverCacheDriver.convert_to_current_depth(index)
         if depth > 3:
             return []
@@ -99,8 +90,7 @@ class NaverCacheDriver(BaseDriver):
                 break
         return ls
 
-    @staticmethod
-    def get_number_of_next_category(index: Tuple[int, int, int, int]) -> int:
+    def get_number_of_next_category(self, index: Tuple[int, int, int, int]) -> int:
         depth = NaverCacheDriver.convert_to_current_depth(index)
         if depth > 3:
             return 0
@@ -125,11 +115,8 @@ class NaverCacheDriver(BaseDriver):
             else:
                 return count
 
-    def debug_category(self):
-        return NaverCacheDriver._categories
-
     # formula : category index + element index + ...
-    def load_category(self) -> bool:
+    def try_to_load_cache(self) -> bool:
         try:
             with open('cache', 'rb') as file:
                 NaverCacheDriver._categories = pickle.load(file)
@@ -138,29 +125,30 @@ class NaverCacheDriver(BaseDriver):
 
         return True
 
-    def update_file(self) -> None:
+    def update_file(self, delay: float) -> None:
         ls = [1]
         code = ''
-        NaverCacheDriver._categories = {}
+        categories = {}
 
-        self._update_recursive(1, '')
+        self._update_recursive(1, '', delay, categories)
+        categories = NaverCacheDriver._categories
 
         with open('cache', 'wb') as file:
             pickle.dump(NaverCacheDriver._categories, file)
 
-    def _update_recursive(self, depth: int, code: str):
+    def _update_recursive(self, depth: int, code: str, delay: float, category_dic: dict):
         if not self.check_exists_by_xpath(NaverXpath.get_combobox(depth)):
             return
 
         self._driver.find_element_by_xpath(NaverXpath.get_combobox(depth)).click()
-        time.sleep(0.3)
+        time.sleep(delay)
         elements = self._driver.find_elements_by_xpath(NaverXpath.get_comboxbox_list(depth))
 
         code += str(depth) + '00'
 
         for i in range(len(elements)):
             code = NaverCacheDriver._change_last_index(code, i + 1)
-            NaverCacheDriver._categories[code] = elements[i].text
+            category_dic[code] = elements[i].text
             print(f'{code}: {NaverCacheDriver._categories[code]}')
 
         code = code[0:len(code) - 3]
@@ -173,7 +161,7 @@ class NaverCacheDriver(BaseDriver):
             code += NaverCacheDriver._generate_single_field(depth, i)
             self._driver.find_element_by_xpath(NaverXpath.get_combobox(depth)).click()
             self._driver.find_element_by_xpath(NaverXpath.get_comboxbox_element(depth, i)).click()
-            self._update_recursive(depth + 1, code)
+            self._update_recursive(depth + 1, code, delay, category_dic)
             code = code[0:len(code) - 3]
 
     def _init_page(self) -> None:

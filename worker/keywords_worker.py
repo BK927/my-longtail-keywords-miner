@@ -1,21 +1,24 @@
+import logging
 import time
 import random
 from typing import Tuple
 
 from PyQt5.QtCore import QThread, pyqtSignal
+from PyQt5.QtWidgets import QMessageBox, QWidget
+
 from crawler.crawling_driver import CrawlingDriver
 
 
-class KeywordsMiner(QThread):
+class KeywordsWorker(QThread):
     update = pyqtSignal(str, str, int, int, int, float)
     save_crawled_data = pyqtSignal(dict)
     crawling_finished = pyqtSignal()
 
     def __init__(self, driver: CrawlingDriver, category: Tuple[int, int, int, int], recursive=True, parent=None):
         super().__init__()
+        self.main = parent
 
         # Property
-        self.main = parent
         self.recursive = recursive
         self._stop_flag = False
         self._category = category
@@ -27,24 +30,30 @@ class KeywordsMiner(QThread):
 
     def run(self):
         keywords_dic = self._create_empty_keyword_dict()
-        if self.recursive:
-            for t in self.__driver.crawl_keywords_recursive(self._category):
-                if self._stop_flag:
-                    break
-                keywords_dic = self._add_to_dict(t[0], t[1], t[2], t[3], t[4], keywords_dic)
-                delay = random.uniform(1, 2)
-                self.update.emit(t[0], t[1], t[2], t[3], t[4], delay)
-                time.sleep(delay)
-        else:
-            for t in self.__driver.crawl_keywords(self._category):
-                if self._stop_flag:
-                    break
-                keywords_dic = self._add_to_dict(t[0], t[1], t[2], t[3], t[4], keywords_dic)
-                delay = random.uniform(1, 2)
-                self.update.emit(t[0], t[1], t[2], t[3], t[4], delay)
-                time.sleep(delay)
-        self.save_crawled_data.emit(keywords_dic)
-        self.crawling_finished.emit()
+        try:
+            if self.recursive:
+                for t in self.__driver.crawl_keywords_recursive(self._category):
+                    if self._stop_flag:
+                        break
+                    keywords_dic = self._add_to_dict(t[0], t[1], t[2], t[3], t[4], keywords_dic)
+                    delay = random.uniform(1, 2)
+                    self.update.emit(t[0], t[1], t[2], t[3], t[4], delay)
+                    time.sleep(delay)
+            else:
+                for t in self.__driver.crawl_keywords(self._category):
+                    if self._stop_flag:
+                        break
+                    keywords_dic = self._add_to_dict(t[0], t[1], t[2], t[3], t[4], keywords_dic)
+                    delay = random.uniform(1, 2)
+                    self.update.emit(t[0], t[1], t[2], t[3], t[4], delay)
+                    time.sleep(delay)
+        except Exception as e:
+            err_message = str(e)
+            logging.critical(err_message)
+            QMessageBox.critical(self.main, '오류', '치명적 오류 발생: ' + err_message)
+        finally:
+            self.save_crawled_data.emit(keywords_dic)
+            self.crawling_finished.emit()
 
     def stop(self):
         self._stop_flag = True
