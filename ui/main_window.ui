@@ -16,6 +16,9 @@
   <property name="windowTitle">
    <string>롱테일 키워드 채굴기</string>
   </property>
+  <property name="locale">
+   <locale language="Korean" country="SouthKorea"/>
+  </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QGridLayout" name="gridLayout_2">
     <item row="0" column="0">
@@ -96,12 +99,12 @@
            </font>
           </property>
           <property name="maxVisibleItems">
-           <number>13</number>
+           <number>20</number>
           </property>
           <property name="frame">
            <bool>true</bool>
           </property>
-          <property name="category" stdset="0">
+          <property name="depth" stdset="0">
            <number>1</number>
           </property>
          </widget>
@@ -126,9 +129,9 @@
            </font>
           </property>
           <property name="maxVisibleItems">
-           <number>25</number>
+           <number>30</number>
           </property>
-          <property name="category" stdset="0">
+          <property name="depth" stdset="0">
            <number>2</number>
           </property>
          </widget>
@@ -156,9 +159,9 @@
            </font>
           </property>
           <property name="maxVisibleItems">
-           <number>25</number>
+           <number>30</number>
           </property>
-          <property name="category" stdset="0">
+          <property name="depth" stdset="0">
            <number>3</number>
           </property>
          </widget>
@@ -189,10 +192,23 @@
            </font>
           </property>
           <property name="maxVisibleItems">
-           <number>25</number>
+           <number>30</number>
           </property>
-          <property name="category" stdset="0">
+          <property name="depth" stdset="0">
            <number>4</number>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QCheckBox" name="RecursivieChkBox">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="text">
+           <string>하위 카테고리도 수집</string>
           </property>
          </widget>
         </item>
@@ -319,7 +335,7 @@
         <item>
          <widget class="QLabel" name="label">
           <property name="text">
-           <string>예상 대기시간: </string>
+           <string>예상 대기 시간</string>
           </property>
           <property name="alignment">
            <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
