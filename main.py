@@ -153,7 +153,7 @@ class MyWindow(QMainWindow, main_window):
 
         filedir = QFileDialog.getSaveFileName(self, 'Save file', './', 'Exel File(*.xlsx)')
         keywords_df = pd.DataFrame(keywords_dic)
-        keywords_df.to_excel(filedir[0], index=False)
+        keywords_df.to_excel(filedir[0] + '.xlsx', index=False)
 
         self._keywords_miner.isRun = False
 

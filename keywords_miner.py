@@ -2,7 +2,9 @@ import time
 import random
 
 from PyQt5.QtCore import QThread, pyqtSignal
-from selenium.common.exceptions import NoSuchElementException
+from selenium.common.exceptions import NoSuchElementException, StaleElementReferenceException
+from selenium.webdriver.support import expected_conditions
+from selenium.webdriver.support.wait import WebDriverWait
 
 from api.api_requester import NaverApi
 from category_enum import Category
@@ -72,10 +74,13 @@ class KeywordsMiner(QThread):
         # Open the combobox
         self.__driver.click(NaverXpath.get_combobox(depth))
 
+        category_text = self.__driver.get_text(NaverXpath.get_comboxbox_element(depth, index))
+
         # Click the element of the combobox
         self.__driver.click(NaverXpath.get_comboxbox_element(depth, index))
 
         self.__check_last_selected(category, index)
+        return category_text
 
     def __create_empty_keywords_dic(self):
         keywords_dic = {'분류': [], '키워드': [], '검색 수': [], '네이버 상품 수': [], '쿠팡 상품 수': []}
@@ -84,9 +89,8 @@ class KeywordsMiner(QThread):
     # TODO: 끝에 메인 UI와 싱크 추가
     def mine_keywords(self, category: Category, index: int) -> {}:
         keywords_dic = self.__create_empty_keywords_dic()
-        self.click_item(category, index)
 
-        category_text = self.__driver.get_text(NaverXpath.get_combobox_title(category.value))
+        category_text = self.click_item(category, index)
 
         self._crawl_current_page(category_text, keywords_dic)
 
@@ -125,10 +129,11 @@ class KeywordsMiner(QThread):
                 self.__driver.switch_to_coupang()
                 self.__driver.clear_searchbox(CoupangXpath.search_box)
                 self.__driver.search(CoupangXpath.search_box, keyword)
-                try:
+
+                if self.__driver.check_exists_by_xpath(CoupangXpath.number_of_items):
                     coupamg_items = int(self.__driver.get_text(CoupangXpath.number_of_items).replace(',', ''))
                     keywords_dic['쿠팡 상품 수'].append(coupamg_items)
-                except NoSuchElementException:
+                else:
                     keywords_dic['쿠팡 상품 수'].append(0)
 
                 # update subscribers

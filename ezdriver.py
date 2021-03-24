@@ -1,8 +1,11 @@
 import platform
 
 from selenium import webdriver
-from selenium.common.exceptions import NoSuchElementException
+from selenium.common.exceptions import NoSuchElementException, StaleElementReferenceException
 from selenium.webdriver.chrome.webdriver import WebDriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support import expected_conditions
+from selenium.webdriver.support.wait import WebDriverWait
 
 from ini_reader import IniReader
 from xpath_container import NaverXpath, CoupangXpath
@@ -29,7 +32,7 @@ class EzDriver:
 
     def _init_driver(self) -> WebDriver:
         if platform.system() == 'Linux':
-            display = Display(visible=True, size=(1920, 1080))
+            display = Display(visible=False, size=(1920, 1080))
             display.start()
 
         options = webdriver.ChromeOptions()
@@ -102,7 +105,10 @@ class EzDriver:
         self.__driver.find_element_by_xpath(xpath).click()
 
     def get_text(self, xpath):
-        return self.__driver.find_element_by_xpath(xpath).text
+        ignored_exceptions = (StaleElementReferenceException,)
+        raw = WebDriverWait(self.__driver, 3, ignored_exceptions=ignored_exceptions) \
+            .until(expected_conditions.presence_of_element_located((By.XPATH, xpath)))
+        return raw.text
 
     def find_elements(self, xpath):
         return self.__driver.find_elements_by_xpath(xpath)
