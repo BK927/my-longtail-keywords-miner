@@ -1,7 +1,11 @@
 import time
 
-from selenium.common.exceptions import NoSuchElementException
+from selenium.common.exceptions import NoSuchElementException, StaleElementReferenceException, TimeoutException
 from typing import Tuple
+
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support import expected_conditions
+from selenium.webdriver.support.wait import WebDriverWait
 
 from api.api_requester import NaverApi
 from crawler.base_driver import BaseDriver
@@ -37,8 +41,8 @@ class CrawlingDriver(BaseDriver):
         return tabs
 
     def get_number_of_products_from_coupang(self, keyword: str) -> int:
-        self._clear_searchbox(CoupangXpath.search_box)
-        self._search(CoupangXpath.search_box, keyword)
+        self._clear_coupang_searchbox(CoupangXpath.search_box)
+        self._search_on_coupang(CoupangXpath.search_box, keyword)
         if self.check_exists_by_xpath(CoupangXpath.number_of_items):
             text = self._driver.find_element_by_xpath(CoupangXpath.number_of_items).text.replace(',', '')
             return int(text)
@@ -54,27 +58,28 @@ class CrawlingDriver(BaseDriver):
         depth = position[0] + 1
         index_stack = [1]
 
-        while len(index_stack) > 0 and depth <= 3:
+        while len(index_stack) > 0 and depth <= 4:
             i = index_stack.pop()
             index_ls[depth - 1] = i
+
+            if self.check_exists_by_xpath(NaverXpath.get_combobox(depth)):
+                index_ls[depth - 1] = 0
+                depth -= 1
+                continue
+
             category_name = self.__cache_driver.get_category_name(tuple(index_ls))
             self._set_naver_category(tuple(index_ls))
             for t in self._crawl_current_category(category_name):
                 yield t
 
-            if self.check_exists_by_xpath(NaverXpath.get_combobox(depth)):
-                depth += 1
-                index_stack.append(1)
-                index_ls[depth - 1] = 1
-                continue
-
             if self.check_exists_by_xpath(NaverXpath.get_comboxbox_element(depth, i)):
                 index_stack.append(i + 1)
                 index_ls[depth - 1] = i + 1
-                continue
 
-            index_ls[depth - 1] = 0
-            depth -= 1
+            if self.check_exists_by_xpath(NaverXpath.get_combobox(depth + 1)):
+                depth += 1
+                index_stack.append(1)
+                index_ls[depth - 1] = 1
 
     def crawl_keywords(self, index: Tuple[int, int, int, int]):
         self._switch_to_naver()
@@ -97,12 +102,20 @@ class CrawlingDriver(BaseDriver):
                 naver_items = NaverApi.get_quantity_of_items(keyword)
 
                 self._switch_to_coupang()
-                self._clear_searchbox(CoupangXpath.search_box)
-                self._search(CoupangXpath.search_box, keyword)
 
                 coupang_items = -1
+                coupang_flag = True
+
                 try:
-                    coupang_items = int(self._get_text(CoupangXpath.number_of_items).replace(',', ''))
+                    self._clear_coupang_searchbox()
+                    self._search_on_coupang(keyword)
+                except NoSuchElementException:
+                    self._driver.get(CoupangXpath.url)
+                    coupang_flag = False
+
+                try:
+                    if coupang_flag:
+                        coupang_items = int(self._get_text(CoupangXpath.number_of_items).replace(',', ''))
                 except NoSuchElementException:
                     coupang_items = 0
 
@@ -119,13 +132,13 @@ class CrawlingDriver(BaseDriver):
     def _switch_to_naver(self) -> None:
         self._driver.switch_to.window(self.__tabs['naver'])
 
-    def _search(self, xpath: str, keyword: str) -> None:
-        form = self._driver.find_element_by_xpath(xpath)
+    def _search_on_coupang(self, keyword: str) -> None:
+        form = self._driver.find_element_by_xpath(CoupangXpath.search_box)
         form.send_keys(keyword)
         form.submit()
 
-    def _clear_searchbox(self, xpath: str) -> None:
-        form = self._driver.find_element_by_xpath(xpath)
+    def _clear_coupang_searchbox(self) -> None:
+        form = self._driver.find_element_by_xpath(CoupangXpath.search_box)
         form.clear()
 
     def _set_naver_category(self, index: Tuple[int, int, int, int]) -> None:

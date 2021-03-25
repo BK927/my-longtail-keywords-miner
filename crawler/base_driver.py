@@ -2,8 +2,11 @@ import os
 import platform
 
 from selenium import webdriver
-from selenium.common.exceptions import NoSuchElementException
+from selenium.common.exceptions import NoSuchElementException, StaleElementReferenceException
 from selenium.webdriver.chrome.webdriver import WebDriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support import expected_conditions
+from selenium.webdriver.support.wait import WebDriverWait
 
 from ini_reader import IniReader
 
@@ -19,7 +22,7 @@ class BaseDriver:
     __service_log_path = "log/chromedriver.log"
     __service_args = ['--verbose']
 
-    __WAIT_TIME = 3
+    __WAIT_TIME = 4
 
     def __init__(self):
         self._display = None
@@ -76,7 +79,7 @@ class BaseDriver:
             self._driver.implicitly_wait(self.__WAIT_TIME)
         return True
 
-    def _get_text(self, xpath):
+    def _get_text(self, xpath) -> str:
         return self._driver.find_element_by_xpath(xpath).text
 
     def quit(self) -> None:

@@ -159,12 +159,12 @@ class MainWindow(QMainWindow, main_window):
             QMessageBox.about(self, '', '카테고리 다운로드를 완료 했습니다.')
             self._initiate_comboboxes()
 
-    def _update(self, category: str, keyword: str, qc_cnt: int, num_of_naver: int, num_of_coupang: int, delay: float):
+    def _update(self, category: str, keyword: str, qc_cnt: int, num_of_naver: int, num_of_coupang: int, delay: float) -> None:
         self._add_row_to_table(category, keyword, qc_cnt, num_of_naver, num_of_coupang)
         t = round(delay, 2)
         self.delayTimeLabel.setText(str(t))
 
-    def _add_row_to_table(self, category: str, keyword: str, qc_cnt: int, naver_products: int, coupang_products: int):
+    def _add_row_to_table(self, category: str, keyword: str, qc_cnt: int, naver_products: int, coupang_products: int) -> None:
         i = self.dataTable.rowCount()
         self.dataTable.insertRow(i)
 
@@ -174,7 +174,8 @@ class MainWindow(QMainWindow, main_window):
         self.dataTable.setItem(i, 3, QTableWidgetItem(str(naver_products)))
         self.dataTable.setItem(i, 4, QTableWidgetItem(str(coupang_products)))
 
-    def _save_datatable(self, keywords_dic):
+    def _save_datatable(self, keywords_dic) -> None:
+        self._miner = None
         min_length = len(keywords_dic['분류'])
 
         for ls in keywords_dic.values():
@@ -185,13 +186,15 @@ class MainWindow(QMainWindow, main_window):
             del ls[min_length:]
 
         filedir = QFileDialog.getSaveFileName(self, 'Save file', './', 'Exel File(*.xlsx)')
+
+        if filedir[0] == '':
+            return
+
         keywords_df = pd.DataFrame(keywords_dic)
         if platform.system() == 'Linux':
             keywords_df.to_excel(filedir[0] + '.xlsx', index=False)
         else:
             keywords_df.to_excel(filedir[0], index=False)
-
-        self._miner = None
 
     def _create_keywords_miner(self, index: Tuple[int, int, int, int]) -> KeywordsWorker:
         if self._miner is None:
