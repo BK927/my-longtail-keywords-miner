@@ -2,6 +2,7 @@ import logging
 import os
 import platform
 import sys
+from enum import Enum
 
 from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtWidgets import *
@@ -25,6 +26,10 @@ logging.basicConfig(filename='./log/debug.log',
                     datefmt='%H:%M:%S',
                     level=logging.DEBUG)
 
+class State(Enum):
+    Idle = 0
+    Crawling = 1
+    Caching = 2
 
 class MainWindow(QMainWindow, main_window):
     stop_signal = pyqtSignal()
@@ -65,23 +70,10 @@ class MainWindow(QMainWindow, main_window):
     @is_crawling.setter
     def is_crawling(self, value):
         self.__is_crawling = value
-
         if value:
-            self.stopBtn.setEnabled(True)
-            self.category1.setEnabled(False)
-            self.category2.setEnabled(False)
-            self.category3.setEnabled(False)
-            self.category4.setEnabled(False)
-            self.crawlBtn.setEnabled(False)
-            self.progressBar.setMaximum(0)
+            self._set_state(State.Crawling)
         else:
-            self.stopBtn.setEnabled(False)
-            self.category1.setEnabled(True)
-            self.category2.setEnabled(True)
-            self.category3.setEnabled(True)
-            self.category4.setEnabled(True)
-            self.crawlBtn.setEnabled(True)
-            self.progressBar.setMaximum(1)
+            self._set_state(State.Idle)
 
     def category_activated(self, index: int, next_comboBox: QComboBox):
         if index == 0:
@@ -120,6 +112,27 @@ class MainWindow(QMainWindow, main_window):
     def stop_crawling(self):
         self.is_crawling = False
 
+    def _set_state(self, state: State):
+        comboboxes = self.findChildren(QComboBox)
+        if state == State.Idle:
+            for c in comboboxes:
+                c.setEnabled(True)
+            self.crawlBtn.setEnabled(True)
+            self.stopBtn.setEnabled(False)
+            self.progressBar.setMaximum(1)
+        elif state == State.Crawling:
+            for c in comboboxes:
+                c.setEnabled(False)
+            self.crawlBtn.setEnabled(False)
+            self.stopBtn.setEnabled(True)
+            self.progressBar.setMaximum(0)
+        elif state == State.Caching:
+            for c in comboboxes:
+                c.setEnabled(False)
+            self.crawlBtn.setEnabled(False)
+            self.stopBtn.setEnabled(False)
+            self.progressBar.setMaximum(0)
+
     def _initiate_comboboxes(self):
         for combobox in self._comboboxes:
             self._reset_combobox(combobox)
@@ -137,25 +150,11 @@ class MainWindow(QMainWindow, main_window):
         return tuple(indexes)
 
     def _start_category_caching(self):
-        self.category1.setEnabled(False)
-        self.category2.setEnabled(False)
-        self.category3.setEnabled(False)
-        self.category4.setEnabled(False)
-        self.crawlBtn.setEnabled(False)
-        self.stopBtn.setEnabled(False)
-        self.dataTable.setEnabled(False)
-        self.progressBar.setMaximum(1)
+        self._set_state(State.Caching)
 
     def _finished_category_caching(self):
         if not self.is_crawling:
-            self.category1.setEnabled(True)
-            self.category2.setEnabled(True)
-            self.category3.setEnabled(True)
-            self.category4.setEnabled(True)
-            self.crawlBtn.setEnabled(True)
-            self.stopBtn.setEnabled(True)
-            self.dataTable.setEnabled(True)
-            self.progressBar.setMaximum(0)
+            self._set_state(State.Idle)
             QMessageBox.about(self, '', '카테고리 다운로드를 완료 했습니다.')
             self._initiate_comboboxes()
 
