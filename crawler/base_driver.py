@@ -1,5 +1,6 @@
 import os
 import platform
+import time
 
 from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException, StaleElementReferenceException
@@ -81,6 +82,9 @@ class BaseDriver:
 
     def _get_text(self, xpath) -> str:
         return self._driver.find_element_by_xpath(xpath).text
+
+    def _save_screenshot(self) -> None:
+        self._driver.save_screenshot('./log/' + time.strftime('%c', time.localtime(time.time())) + '.png')
 
     def quit(self) -> None:
         self._driver.quit()

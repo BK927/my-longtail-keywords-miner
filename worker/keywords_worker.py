@@ -37,7 +37,7 @@ class KeywordsWorker(QThread):
                         break
                     keywords_dic = self._add_to_dict(t[0], t[1], t[2], t[3], t[4], keywords_dic)
                     delay = random.uniform(1, 2)
-                    self.update.emit(t[0], t[1], t[2], t[3], t[4], delay)
+                    self.update.emit(t[0], t[1], t[2], t[3], t[4], delay + t[5])
                     time.sleep(delay)
             else:
                 for t in self.__driver.crawl_keywords(self._category):
@@ -45,7 +45,7 @@ class KeywordsWorker(QThread):
                         break
                     keywords_dic = self._add_to_dict(t[0], t[1], t[2], t[3], t[4], keywords_dic)
                     delay = random.uniform(1, 2)
-                    self.update.emit(t[0], t[1], t[2], t[3], t[4], delay)
+                    self.update.emit(t[0], t[1], t[2], t[3], t[4], delay + t[5])
                     time.sleep(delay)
         except Exception as e:
             err_message = str(e)

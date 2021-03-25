@@ -39,7 +39,7 @@ class MainWindow(QMainWindow, main_window):
         self.setupUi(self)
 
         # Properties
-        self._crawling_driver = CrawlingDriver()
+        self._crawling_driver = CrawlingDriver(crawl_coupang=self.coupangChkBox.isChecked())
         self._category_cache_driver = NaverCacheDriver()
         self._comboboxes: List[QComboBox, ...] = [self.category1, self.category2, self.category3, self.category4]
         self.__is_crawling = False
@@ -48,6 +48,7 @@ class MainWindow(QMainWindow, main_window):
         # initiate slots
         self.crawlBtn.clicked.connect(self.crawlBtn_clicked)
         self.stopBtn.clicked.connect(self.stopBtn_clicked)
+        self.coupangChkBox.stateChanged.connect(lambda: self._crawling_driver.set_coupang_crawling(self.coupangChkBox.isChecked()))
         self.category1.activated.connect(lambda index: self.category_activated(index, self.category2))
         self.category2.activated.connect(lambda index: self.category_activated(index, self.category3))
         self.category3.activated.connect(lambda index: self.category_activated(index, self.category4))
@@ -158,12 +159,13 @@ class MainWindow(QMainWindow, main_window):
             QMessageBox.about(self, '', '카테고리 다운로드를 완료 했습니다.')
             self._initiate_comboboxes()
 
+    # TODO: Add enuri function
     def _update(self, category: str, keyword: str, qc_cnt: int, num_of_naver: int, num_of_coupang: int, delay: float) -> None:
-        self._add_row_to_table(category, keyword, qc_cnt, num_of_naver, num_of_coupang)
+        self._add_row_to_table(category, keyword, qc_cnt, num_of_naver, num_of_coupang, 0)
         t = round(delay, 2)
         self.delayTimeLabel.setText(str(t))
 
-    def _add_row_to_table(self, category: str, keyword: str, qc_cnt: int, naver_products: int, coupang_products: int) -> None:
+    def _add_row_to_table(self, category: str, keyword: str, qc_cnt: int, naver_products: int, coupang_products: int, enuri_products: int) -> None:
         i = self.dataTable.rowCount()
         self.dataTable.insertRow(i)
 
@@ -172,6 +174,7 @@ class MainWindow(QMainWindow, main_window):
         self.dataTable.setItem(i, 2, QTableWidgetItem(str(qc_cnt)))
         self.dataTable.setItem(i, 3, QTableWidgetItem(str(naver_products)))
         self.dataTable.setItem(i, 4, QTableWidgetItem(str(coupang_products)))
+        self.dataTable.setItem(i, 5, QTableWidgetItem(str(enuri_products)))
 
     def _save_datatable(self, keywords_dic) -> None:
         self._miner = None

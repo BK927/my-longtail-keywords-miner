@@ -19,11 +19,13 @@ class CrawlingDriver(BaseDriver):
     __coupang_path = CoupangXpath.url
     __cache_driver = NaverCacheDriver()
 
-    __WAIT_TIME = 3
+    __COUPANG_WAIT = 3.5
+    __COUPANG_WAIT_WEIGHT = 0.5
 
-    def __init__(self):
+    def __init__(self, crawl_coupang=False, crwal_enuri=False):
         super().__init__()
         self.__tabs = self._init_pages()
+        self._coupang_flag = crawl_coupang
 
     def _init_pages(self):
         self._driver.get(self.__naver_path)
@@ -39,6 +41,9 @@ class CrawlingDriver(BaseDriver):
         tabs = {'naver': self._driver.window_handles[0], 'coupang': self._driver.window_handles[1]}
         self._driver.switch_to.window(tabs['naver'])
         return tabs
+
+    def set_coupang_crawling(self, flag: bool):
+        self._coupang_flag = flag
 
     def get_number_of_products_from_coupang(self, keyword: str) -> int:
         self._clear_coupang_searchbox(CoupangXpath.search_box)
@@ -62,7 +67,7 @@ class CrawlingDriver(BaseDriver):
             i = index_stack.pop()
             index_ls[depth - 1] = i
 
-            if self.check_exists_by_xpath(NaverXpath.get_combobox(depth)):
+            if not self.check_exists_by_xpath(NaverXpath.get_combobox(depth)):
                 index_ls[depth - 1] = 0
                 depth -= 1
                 continue
@@ -72,7 +77,7 @@ class CrawlingDriver(BaseDriver):
             for t in self._crawl_current_category(category_name):
                 yield t
 
-            if self.check_exists_by_xpath(NaverXpath.get_comboxbox_element(depth, i)):
+            if self.check_exists_by_xpath(NaverXpath.get_comboxbox_element(depth, i + 1)):
                 index_stack.append(i + 1)
                 index_ls[depth - 1] = i + 1
 
@@ -101,27 +106,39 @@ class CrawlingDriver(BaseDriver):
                 monthly_qc_cnt = NaverApi.get_monthly_qc_cnt(keyword)
                 naver_items = NaverApi.get_quantity_of_items(keyword)
 
-                self._switch_to_coupang()
+                coupang_items = -2
 
-                coupang_items = -1
-                coupang_flag = True
+                if self._coupang_flag:
+                    self._switch_to_coupang()
 
-                try:
-                    self._clear_coupang_searchbox()
-                    self._search_on_coupang(keyword)
-                except NoSuchElementException:
-                    self._driver.get(CoupangXpath.url)
-                    coupang_flag = False
+                    coupang_items = -1
+                    succesed_couapng_crawling = True
 
-                try:
-                    if coupang_flag:
-                        coupang_items = int(self._get_text(CoupangXpath.number_of_items).replace(',', ''))
-                except NoSuchElementException:
-                    coupang_items = 0
+                    try:
+                        time.sleep(CrawlingDriver.__COUPANG_WAIT)
+                        self._clear_coupang_searchbox()
+                        self._search_on_coupang(keyword)
+                    except NoSuchElementException:
+                        self._save_screenshot()
+                        CrawlingDriver.__COUPANG_WAIT += CrawlingDriver.__COUPANG_WAIT_WEIGHT
+                        time.sleep(CrawlingDriver.__COUPANG_WAIT)
+                        self._driver.get(CoupangXpath.url)
+                        succesed_couapng_crawling = False
 
-                self._switch_to_naver()
+                    try:
+                        if succesed_couapng_crawling:
+                            coupang_items = int(self._get_text(CoupangXpath.number_of_items).replace(',', ''))
+                    except NoSuchElementException:
+                        self._save_screenshot()
+                        coupang_items = 0
 
-                yield category_name, keyword, monthly_qc_cnt, naver_items, coupang_items
+                    self._switch_to_naver()
+
+                delay = 0
+                if self._coupang_flag:
+                    delay += CrawlingDriver.__COUPANG_WAIT
+
+                yield category_name, keyword, monthly_qc_cnt, naver_items, coupang_items, delay
 
             # 다음 페이지 넘기기
             self._driver.find_element_by_xpath(NaverXpath.next_page_btn).click()

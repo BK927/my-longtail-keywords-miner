@@ -76,7 +76,7 @@
         <item>
          <widget class="QComboBox" name="category1">
           <property name="sizePolicy">
-           <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+           <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
             <horstretch>0</horstretch>
             <verstretch>0</verstretch>
            </sizepolicy>
@@ -95,7 +95,9 @@
           </property>
           <property name="font">
            <font>
-            <pointsize>9</pointsize>
+            <pointsize>12</pointsize>
+            <weight>75</weight>
+            <bold>true</bold>
            </font>
           </property>
           <property name="maxVisibleItems">
@@ -112,7 +114,7 @@
         <item>
          <widget class="QComboBox" name="category2">
           <property name="sizePolicy">
-           <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+           <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
             <horstretch>0</horstretch>
             <verstretch>0</verstretch>
            </sizepolicy>
@@ -125,7 +127,9 @@
           </property>
           <property name="font">
            <font>
-            <pointsize>9</pointsize>
+            <pointsize>12</pointsize>
+            <weight>75</weight>
+            <bold>true</bold>
            </font>
           </property>
           <property name="maxVisibleItems">
@@ -142,7 +146,7 @@
            <bool>true</bool>
           </property>
           <property name="sizePolicy">
-           <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+           <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
             <horstretch>0</horstretch>
             <verstretch>0</verstretch>
            </sizepolicy>
@@ -155,7 +159,9 @@
           </property>
           <property name="font">
            <font>
-            <pointsize>9</pointsize>
+            <pointsize>12</pointsize>
+            <weight>75</weight>
+            <bold>true</bold>
            </font>
           </property>
           <property name="maxVisibleItems">
@@ -169,7 +175,7 @@
         <item>
          <widget class="QComboBox" name="category4">
           <property name="sizePolicy">
-           <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+           <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
             <horstretch>0</horstretch>
             <verstretch>0</verstretch>
            </sizepolicy>
@@ -188,7 +194,9 @@
           </property>
           <property name="font">
            <font>
-            <pointsize>9</pointsize>
+            <pointsize>12</pointsize>
+            <weight>75</weight>
+            <bold>true</bold>
            </font>
           </property>
           <property name="maxVisibleItems">
@@ -200,20 +208,38 @@
          </widget>
         </item>
         <item>
-         <widget class="QCheckBox" name="RecursivieChkBox">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="text">
-           <string>하위 카테고리도 수집</string>
-          </property>
-          <property name="checked">
-           <bool>true</bool>
-          </property>
-         </widget>
+         <layout class="QVBoxLayout" name="verticalLayout_2">
+          <item>
+           <widget class="QCheckBox" name="RecursivieChkBox">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="text">
+             <string>하위 카테고리도 수집</string>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="coupangChkBox">
+            <property name="text">
+             <string>쿠팡 수집</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="enuriChkBox">
+            <property name="text">
+             <string>에누리 수집</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
         </item>
        </layout>
       </item>
@@ -267,13 +293,13 @@
          <number>0</number>
         </property>
         <property name="columnCount">
-         <number>5</number>
+         <number>6</number>
         </property>
         <attribute name="horizontalHeaderCascadingSectionResizes">
          <bool>false</bool>
         </attribute>
         <attribute name="horizontalHeaderDefaultSectionSize">
-         <number>193</number>
+         <number>166</number>
         </attribute>
         <attribute name="horizontalHeaderShowSortIndicator" stdset="0">
          <bool>false</bool>
@@ -310,6 +336,11 @@
         <column>
          <property name="text">
           <string>쿠팡 상품 수</string>
+         </property>
+        </column>
+        <column>
+         <property name="text">
+          <string>에누리 상품 수</string>
          </property>
         </column>
        </widget>
