@@ -1,11 +1,7 @@
 import time
 
-from selenium.common.exceptions import NoSuchElementException, StaleElementReferenceException, TimeoutException
+from selenium.common.exceptions import NoSuchElementException
 from typing import Tuple
-
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support import expected_conditions
-from selenium.webdriver.support.wait import WebDriverWait
 
 from api.api_requester import NaverApi
 from crawler.base_driver import BaseDriver
@@ -78,14 +74,25 @@ class CrawlingDriver(BaseDriver):
             for t in self._crawl_current_category(category_name):
                 yield t
 
+            attr = self._driver.find_element_by_xpath(NaverXpath.get_combobox(depth)).get_attribute('class')
+            if 'active' not in attr:
+                self._driver.find_element_by_xpath(NaverXpath.get_combobox(depth)).click()
+
+            flag = True
             if self.check_exists_by_xpath(NaverXpath.get_comboxbox_element(depth, i + 1)):
                 index_stack.append(i + 1)
                 index_ls[depth - 1] = i + 1
+                flag = False
 
             if self.check_exists_by_xpath(NaverXpath.get_combobox(depth + 1)):
                 depth += 1
                 index_stack.append(1)
                 index_ls[depth - 1] = 1
+                flag = False
+
+            if flag:
+                index_ls[depth - 1] = 0
+                depth -= 1
 
     def crawl_keywords(self, index: Tuple[int, int, int, int]):
         self._switch_to_naver()
@@ -120,7 +127,7 @@ class CrawlingDriver(BaseDriver):
                         self._clear_coupang_searchbox()
                         self._search_on_coupang(keyword)
                     except NoSuchElementException:
-                        self._save_screenshot()
+                        self.save_screenshot()
                         CrawlingDriver.__COUPANG_WAIT += CrawlingDriver.__COUPANG_WAIT_WEIGHT
                         time.sleep(CrawlingDriver.__COUPANG_WAIT)
                         self._driver.get(CoupangXpath.url)
@@ -130,7 +137,7 @@ class CrawlingDriver(BaseDriver):
                         if succesed_couapng_crawling:
                             coupang_items = int(self._get_text(CoupangXpath.number_of_items).replace(',', ''))
                     except NoSuchElementException:
-                        self._save_screenshot()
+                        self.save_screenshot()
                         coupang_items = 0
 
                     self._switch_to_naver()
@@ -165,8 +172,11 @@ class CrawlingDriver(BaseDriver):
                 break
             if index[i] == self._last_setted_index[i]:
                 continue
-            self._driver.find_element_by_xpath(NaverXpath.get_combobox(i + 1)).click()
-            time.sleep(0.3)
+            element = self._driver.find_element_by_xpath(NaverXpath.get_combobox(i + 1))
+            attr = element.get_attribute('class')
+            if 'active' not in attr:
+                element.click()
+                time.sleep(0.3)
             self._driver.find_element_by_xpath(NaverXpath.get_comboxbox_element(i + 1, index[i])).click()
             self._last_setted_index[i] = index[i]
         self._driver.find_element_by_xpath(NaverXpath.lookup_btn).click()

@@ -1,6 +1,7 @@
 import logging
 import time
 import random
+import traceback
 from typing import Tuple
 
 from PyQt5.QtCore import QThread, pyqtSignal
@@ -14,7 +15,7 @@ class KeywordsWorker(QThread):
     save_crawled_data = pyqtSignal(dict)
     crawling_finished = pyqtSignal()
 
-    def __init__(self, driver: CrawlingDriver, category: Tuple[int, int, int, int], recursive=True, parent=None):
+    def __init__(self, driver: CrawlingDriver, category: Tuple[int, int, int, int], delay=(0, 0.3), recursive=True, parent=None):
         super().__init__()
         self.main = parent
 
@@ -22,11 +23,20 @@ class KeywordsWorker(QThread):
         self.recursive = recursive
         self._stop_flag = False
         self._category = category
+        self._delay = delay
 
         # QtSignal
         parent.stop_signal.connect(self.stop)
 
         self.__driver = driver
+
+    @property
+    def delay(self) -> float:
+        return random.uniform(self._delay[0], self._delay[1])
+
+    @delay.setter
+    def delay(self, delay: Tuple[int, int]):
+        self._delay = delay
 
     def run(self):
         keywords_dic = self._create_empty_keyword_dict()
@@ -36,7 +46,7 @@ class KeywordsWorker(QThread):
                     if self._stop_flag:
                         break
                     keywords_dic = self._add_to_dict(t[0], t[1], t[2], t[3], t[4], keywords_dic)
-                    delay = random.uniform(1, 2)
+                    delay = self.delay
                     self.update.emit(t[0], t[1], t[2], t[3], t[4], delay + t[5])
                     time.sleep(delay)
             else:
@@ -44,12 +54,13 @@ class KeywordsWorker(QThread):
                     if self._stop_flag:
                         break
                     keywords_dic = self._add_to_dict(t[0], t[1], t[2], t[3], t[4], keywords_dic)
-                    delay = random.uniform(1, 2)
+                    delay = self.delay
                     self.update.emit(t[0], t[1], t[2], t[3], t[4], delay + t[5])
                     time.sleep(delay)
         except Exception as e:
+            self.__driver.save_screenshot()
             err_message = str(e)
-            logging.critical(err_message)
+            logging.critical(err_message + " : " + traceback.format_exc())
             QMessageBox.critical(self.main, '오류', '치명적 오류 발생: ' + err_message)
         finally:
             self.save_crawled_data.emit(keywords_dic)

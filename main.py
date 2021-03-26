@@ -21,8 +21,8 @@ from crawler.naver_cache_driver import NaverCacheDriver
 main_window = uic.loadUiType('./ui/main_window.ui')[0]
 
 logging.basicConfig(filename='./log/debug.log',
-                    filemode='a',
-                    format='%(asctime)s - %(thread)d - %(levelname)s - %(message)s',
+                    filemode='w',
+                    format='%(asctime)s - %(thread)d - %(levelname)s - %(name)s:%(lineno)d %(message)s',
                     datefmt='%H:%M:%S',
                     level=logging.DEBUG)
 

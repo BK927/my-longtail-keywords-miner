@@ -55,7 +55,7 @@ class BaseDriver:
         orig = None
         if platform.system() == 'Linux':
             orig = os.environ["DISPLAY"]
-            self._display = Display(visible=False, size=(1920, 1080))
+            self._display = Display(visible=not IniReader.HEADLESS == 'TRUE', size=(1920, 1080))
             self._display.start()
 
         driver = webdriver.Chrome(BaseDriver.__driver_path,
@@ -80,11 +80,14 @@ class BaseDriver:
             self._driver.implicitly_wait(self.__WAIT_TIME)
         return True
 
-    def _get_text(self, xpath) -> str:
-        return self._driver.find_element_by_xpath(xpath).text
-
-    def _save_screenshot(self) -> None:
-        self._driver.save_screenshot('./log/' + time.strftime('%c', time.localtime(time.time())) + '.png')
+    def save_screenshot(self, name='') -> None:
+        if name == '':
+            self._driver.save_screenshot('./log/' + time.strftime('%c', time.localtime(time.time())) + '.png')
+        else:
+            self._driver.save_screenshot(name + '.png')
 
     def quit(self) -> None:
         self._driver.quit()
+
+    def _get_text(self, xpath) -> str:
+        return self._driver.find_element_by_xpath(xpath).text
