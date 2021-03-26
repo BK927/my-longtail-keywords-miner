@@ -26,6 +26,7 @@ class CrawlingDriver(BaseDriver):
         super().__init__()
         self.__tabs = self._init_pages()
         self._coupang_flag = crawl_coupang
+        self._last_setted_index = [0, 0, 0, 0]
 
     def _init_pages(self):
         self._driver.get(self.__naver_path)
@@ -162,8 +163,11 @@ class CrawlingDriver(BaseDriver):
         for i in range(4):
             if index[i] == 0:
                 break
+            if index[i] == self._last_setted_index[i]:
+                continue
             self._driver.find_element_by_xpath(NaverXpath.get_combobox(i + 1)).click()
             time.sleep(0.3)
             self._driver.find_element_by_xpath(NaverXpath.get_comboxbox_element(i + 1, index[i])).click()
+            self._last_setted_index[i] = index[i]
         self._driver.find_element_by_xpath(NaverXpath.lookup_btn).click()
         time.sleep(0.5)

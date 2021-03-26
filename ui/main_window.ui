@@ -234,6 +234,9 @@
           </item>
           <item>
            <widget class="QCheckBox" name="enuriChkBox">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
             <property name="text">
              <string>에누리 수집</string>
             </property>

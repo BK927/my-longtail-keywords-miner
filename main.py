@@ -173,8 +173,10 @@ class MainWindow(QMainWindow, main_window):
         self.dataTable.setItem(i, 1, QTableWidgetItem(keyword))
         self.dataTable.setItem(i, 2, QTableWidgetItem(str(qc_cnt)))
         self.dataTable.setItem(i, 3, QTableWidgetItem(str(naver_products)))
-        self.dataTable.setItem(i, 4, QTableWidgetItem(str(coupang_products)))
-        self.dataTable.setItem(i, 5, QTableWidgetItem(str(enuri_products)))
+        if self.coupangChkBox.isChecked():
+            self.dataTable.setItem(i, 4, QTableWidgetItem(str(coupang_products)))
+        if self.enuriChkBox.isChecked():
+            self.dataTable.setItem(i, 5, QTableWidgetItem(str(enuri_products)))
 
     def _save_datatable(self, keywords_dic) -> None:
         self._miner = None
