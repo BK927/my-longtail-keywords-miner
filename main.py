@@ -48,7 +48,8 @@ class MainWindow(QMainWindow, main_window):
         # initiate slots
         self.crawlBtn.clicked.connect(self.crawlBtn_clicked)
         self.stopBtn.clicked.connect(self.stopBtn_clicked)
-        self.coupangChkBox.stateChanged.connect(lambda: self._crawling_driver.set_coupang_crawling(self.coupangChkBox.isChecked()))
+        self.coupangChkBox.stateChanged.connect(lambda: setattr(self._crawling_driver, 'crawl_coupang', self.coupangChkBox.isChecked()))
+        self.enuriChkBox.stateChanged.connect(lambda: setattr(self._crawling_driver, 'crawl_enuri', self.enuriChkBox.isChecked()))
         self.category1.activated.connect(lambda index: self.category_activated(index, self.category2))
         self.category2.activated.connect(lambda index: self.category_activated(index, self.category3))
         self.category3.activated.connect(lambda index: self.category_activated(index, self.category4))
@@ -160,8 +161,8 @@ class MainWindow(QMainWindow, main_window):
             self._initiate_comboboxes()
 
     # TODO: Add enuri function
-    def _update(self, category: str, keyword: str, qc_cnt: int, num_of_naver: int, num_of_coupang: int, delay: float) -> None:
-        self._add_row_to_table(category, keyword, qc_cnt, num_of_naver, num_of_coupang, 0)
+    def _update(self, category: str, keyword: str, qc_cnt: int, num_of_naver: int, num_of_coupang: int, num_of_enuri: int, delay: float) -> None:
+        self._add_row_to_table(category, keyword, qc_cnt, num_of_naver, num_of_coupang, num_of_enuri)
         t = round(delay, 2)
         self.delayTimeLabel.setText(str(t))
 
@@ -177,6 +178,7 @@ class MainWindow(QMainWindow, main_window):
             self.dataTable.setItem(i, 4, QTableWidgetItem(str(coupang_products)))
         if self.enuriChkBox.isChecked():
             self.dataTable.setItem(i, 5, QTableWidgetItem(str(enuri_products)))
+        self.dataTable.scrollToBottom()
 
     def _save_datatable(self, keywords_dic) -> None:
         self._miner = None
@@ -208,6 +210,9 @@ class MainWindow(QMainWindow, main_window):
             self._miner.save_crawled_data.connect(self._save_datatable)
             self._miner.crawling_finished.connect(self.stop_crawling)
         return self._miner
+
+    def _err_messagebox(self, message: str):
+        QMessageBox.critical(self, '오류', '치명적 오류 발생: ' + message)
 
 
 if __name__ == "__main__":

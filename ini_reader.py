@@ -30,4 +30,3 @@ class IniReader:
     # Chromedriver
     DRIVER_PATH = __config['DRIVER']['DRIVER_PATH']
     HEADLESS = __config['DRIVER']['HEADLESS']
-    NO_SANDBOX = __config['DRIVER']['NO_SANDBOX']

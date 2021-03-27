@@ -2,10 +2,13 @@ class NaverXpath:
     url = 'https://datalab.naver.com/shoppingInsight/sCategory.naver'
 
     lookup_btn = '//*[@id="content"]/div[2]/div/div[1]/div/a'
+    prev_page_btn = '//*[@id="content"]/div[2]/div/div[2]/div[2]/div/div/div[2]/div/a[1]'
     next_page_btn = '//*[@id="content"]/div[2]/div/div[2]/div[2]/div/div/div[2]/div/a[2]'
+    page_btn_dsiabled_attr = 'defult'
     all_device_chkbox = '//*[@id="18_device_0"]'
     both_gender_chkbox = '//*[@id="19_gender_0"]'
     all_age_chkbox = '//*[@id="20_age_0"]'
+    combobox_active_attr = 'active'
 
     @staticmethod
     def get_combobox(depth: int) -> str:
@@ -34,3 +37,10 @@ class CoupangXpath:
     search_box = '//*[@id="headerSearchKeyword"]'
     search_btn = '//*[@id="headerSearchBtn"]'
     number_of_items = '//*[@id="searchOptionForm"]/div[2]/div[2]/div[1]/p/strong[2]'
+
+
+class EnuriXpath:
+    url = 'http://www.enuri.com/'
+
+    search_box = '//*[@id="keyword"]'
+    number_of_itmes = '//*[@id="tabsDiv"]/li[1]/a/span'

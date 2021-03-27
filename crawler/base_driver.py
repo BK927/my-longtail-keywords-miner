@@ -39,8 +39,7 @@ class BaseDriver:
         # headless 옵션 설정
         if IniReader.HEADLESS == 'TRUE':
             options.add_argument('headless')
-        if IniReader.NO_SANDBOX == 'TRUE':
-            options.add_argument("no-sandbox")
+        options.add_argument("no-sandbox")
 
         # 브라우저 윈도우 사이즈
         options.add_argument('window-size=1920x1080')
