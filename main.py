@@ -116,8 +116,11 @@ class MainWindow(QMainWindow, main_window):
 
     def _set_state(self, state: State):
         comboboxes = self.findChildren(QComboBox)
+        checkboxes = self.findChildren(QCheckBox)
         if state == State.Idle:
             for c in comboboxes:
+                c.setEnabled(True)
+            for c in checkboxes:
                 c.setEnabled(True)
             self.crawlBtn.setEnabled(True)
             self.stopBtn.setEnabled(False)
@@ -125,11 +128,15 @@ class MainWindow(QMainWindow, main_window):
         elif state == State.Crawling:
             for c in comboboxes:
                 c.setEnabled(False)
+            for c in checkboxes:
+                c.setEnabled(False)
             self.crawlBtn.setEnabled(False)
             self.stopBtn.setEnabled(True)
             self.progressBar.setMaximum(0)
         elif state == State.Caching:
             for c in comboboxes:
+                c.setEnabled(False)
+            for c in checkboxes:
                 c.setEnabled(False)
             self.crawlBtn.setEnabled(False)
             self.stopBtn.setEnabled(False)
