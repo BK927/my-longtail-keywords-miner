@@ -46,7 +46,7 @@ class KeywordsWorker(QThread):
                 for t in self.__driver.crawl_keywords_recursive(self._category):
                     if self._stop_flag:
                         break
-                    keywords_dic = self._add_to_dict(t[0], t[1], t[2], t[3], t[4], keywords_dic)
+                    keywords_dic = self._add_to_dict(t[0], t[1], t[2], t[3], t[4], t[5], keywords_dic)
                     delay = self.delay
                     self.update.emit(t[0], t[1], t[2], t[3], t[4], t[5], delay + t[6])
                     time.sleep(delay)
@@ -54,7 +54,7 @@ class KeywordsWorker(QThread):
                 for t in self.__driver.crawl_keywords(self._category):
                     if self._stop_flag:
                         break
-                    keywords_dic = self._add_to_dict(t[0], t[1], t[2], t[3], t[4], keywords_dic)
+                    keywords_dic = self._add_to_dict(t[0], t[1], t[2], t[3], t[4], t[5], keywords_dic)
                     delay = self.delay
                     self.update.emit(t[0], t[1], t[2], t[3], t[4], t[5]. delay + t[6])
                     time.sleep(delay)
@@ -71,13 +71,21 @@ class KeywordsWorker(QThread):
         self._stop_flag = True
 
     def _create_empty_keyword_dict(self) -> dict:
-        return {'분류': [], '키워드': [], '검색 수': [], '네이버 상품 수': [], '쿠팡 상품 수': []}
+        dic = {'분류': [], '키워드': [], '검색 수': [], '네이버 상품 수': []}
+        if self.__driver.crawl_coupang:
+            dic['쿠팡 상품 수'] = []
+        if self.__driver.crawl_enuri:
+            dic['에누리 상품 수'] = []
+        return dic
 
     def _add_to_dict(self, category: str, keyword: str, qc_cnt: int, naver_products: int, coupang_products: int,
-                      keywords_dic: dict):
+                      enuri_products: int, keywords_dic: dict):
         keywords_dic['분류'].append(category)
         keywords_dic['키워드'].append(keyword)
         keywords_dic['검색 수'].append(qc_cnt)
         keywords_dic['네이버 상품 수'].append(naver_products)
-        keywords_dic['쿠팡 상품 수'].append(coupang_products)
+        if self.__driver.crawl_coupang:
+            keywords_dic['쿠팡 상품 수'].append(coupang_products)
+        if self.__driver.crawl_enuri:
+            keywords_dic['에누리 상품 수'].append(enuri_products)
         return keywords_dic

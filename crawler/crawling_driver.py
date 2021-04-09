@@ -1,3 +1,4 @@
+import logging
 import time
 
 from selenium.common.exceptions import NoSuchElementException, StaleElementReferenceException
@@ -13,8 +14,8 @@ class CrawlingDriver(BaseDriver):
     # selenium crawler setting
     __cache_driver = NaverCacheDriver()
 
-    __WAIT = 3.5
-    __WAIT_WEIGHT = 0.5
+    __SLEEP_TIME = 2
+    __SLEEP_WEIGHT = 0.5
 
     def __init__(self, crawl_coupang=False, crawl_enuri=False):
         super().__init__()
@@ -75,16 +76,20 @@ class CrawlingDriver(BaseDriver):
         depth = position[0] + 1
         index_stack = [1]
 
-        while len(index_stack) > 0 and depth <= 4:
+        while len(index_stack) > 0:
+            print(index_stack)
+            logging.debug(index_stack)
             i = index_stack.pop()
             index_ls[depth - 1] = i
 
-            if not self.check_exists_by_xpath(NaverXpath.get_combobox(depth)):
+            if depth > 4 or not self.check_exists_by_xpath(NaverXpath.get_combobox(depth)):
                 index_ls[depth - 1] = 0
                 depth -= 1
                 continue
 
             category_name = self.__cache_driver.get_category_name(tuple(index_ls))
+            print(category_name)
+            logging.debug(category_name)
             self._set_naver_category(tuple(index_ls))
             for t in self._crawl_current_category(category_name):
                 yield t
@@ -93,19 +98,21 @@ class CrawlingDriver(BaseDriver):
             if 'active' not in attr:
                 self._driver.find_element_by_xpath(NaverXpath.get_combobox(depth)).click()
 
-            flag = True
+            no_available_in_current_depth = True
             if self.check_exists_by_xpath(NaverXpath.get_comboxbox_element(depth, i + 1)):
+                logging.debug('Lower element exist')
+                print('Lower element exist')
                 index_stack.append(i + 1)
-                index_ls[depth - 1] = i + 1
-                flag = False
+                no_available_in_current_depth = False
 
             if self.check_exists_by_xpath(NaverXpath.get_combobox(depth + 1)):
+                logging.debug('Next depth exist')
+                print('Next depth exist')
                 depth += 1
                 index_stack.append(1)
-                index_ls[depth - 1] = 1
-                flag = False
+                no_available_in_current_depth = False
 
-            if flag:
+            if no_available_in_current_depth:
                 index_ls[depth - 1] = 0
                 depth -= 1
 
@@ -123,11 +130,14 @@ class CrawlingDriver(BaseDriver):
             for i in range(1, 21):
                 if NaverXpath.page_btn_dsiabled_attr in self._driver.find_element_by_xpath(NaverXpath.next_page_btn).get_attribute('class'):
                     break
+                if not self.check_exists_by_xpath(NaverXpath.get_keyword(i)):
+                    break
 
-                raw = None
+                keyword = 'error'
                 for j in range(10):
                     try:
                         raw = self._get_text(NaverXpath.get_keyword(i))
+                        keyword = raw.split('\n')[1]
                         break
                     except StaleElementReferenceException:
                         if j > 5:
@@ -143,7 +153,6 @@ class CrawlingDriver(BaseDriver):
                         self.save_screenshot()
                         break
 
-                keyword = raw.split('\n')[1]
                 monthly_qc_cnt = NaverApi.get_monthly_qc_cnt(keyword)
                 naver_items = NaverApi.get_quantity_of_items(keyword)
 
@@ -152,12 +161,12 @@ class CrawlingDriver(BaseDriver):
                 delay = 0
 
                 if self._crawl_coupang:
-                    delay += CrawlingDriver.__WAIT
+                    delay += CrawlingDriver.__SLEEP_TIME
                     self._switch_to_coupang()
                     coupang_items = self._crawl_products_number(CoupangXpath.search_box, CoupangXpath.number_of_items, keyword)
 
                 if self._crawl_enuri:
-                    delay += CrawlingDriver.__WAIT
+                    delay += CrawlingDriver.__SLEEP_TIME
                     self._switch_to_enuri()
                     enuri_items = self._crawl_products_number(EnuriXpath.search_box, EnuriXpath.number_of_itmes, keyword)
 
@@ -180,24 +189,27 @@ class CrawlingDriver(BaseDriver):
     def _crawl_products_number(self, searchbox_xpath: str, number_xpath: str, keyword: str) -> int:
         number_of_items = -1
         is_crawling_successed = True
-        form = self._driver.find_element_by_xpath(searchbox_xpath)
 
         try:
-            time.sleep(CrawlingDriver.__WAIT)
+            form = self._driver.find_element_by_xpath(searchbox_xpath)
             form.clear()
             form.send_keys(keyword)
             form.submit()
         except NoSuchElementException:
             self.save_screenshot()
-            CrawlingDriver.__WAIT += CrawlingDriver.__WAIT_WEIGHT
-            time.sleep(CrawlingDriver.__WAIT)
-            self._driver.navigate().refresh()
+            CrawlingDriver.__SLEEP_TIME += CrawlingDriver.__SLEEP_WEIGHT
+            time.sleep(CrawlingDriver.__SLEEP_TIME)
+            self._driver.refresh()
             is_crawling_successed = False
 
         try:
             if is_crawling_successed:
+                time.sleep(CrawlingDriver.__SLEEP_TIME)
                 number_of_items = int(self._get_text(number_xpath).replace(',', ''))
         except NoSuchElementException:
+            self.save_screenshot()
+            number_of_items = 0
+        except ValueError:
             self.save_screenshot()
             number_of_items = 0
         return number_of_items

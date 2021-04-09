@@ -74,14 +74,14 @@ class NaverCacheDriver(BaseDriver):
         ls = []
 
         if code == '':
-            for i in range(1, 20):
+            for i in range(1, 99):
                 query = NaverCacheDriver.encode((i, 0, 0, 0))
                 if query in NaverCacheDriver._categories:
                     ls.append(NaverCacheDriver._categories[query])
                 else:
                     return ls
 
-        for i in range(1, 20):
+        for i in range(1, 99):
             index_ls[depth] += 1
             query = NaverCacheDriver.encode(list(index_ls))
             if query in NaverCacheDriver._categories:
@@ -100,14 +100,14 @@ class NaverCacheDriver(BaseDriver):
         count = 0
 
         if code == '':
-            for i in range(1, 20):
+            for i in range(1, 99):
                 query = NaverCacheDriver.encode((i, 0, 0, 0))
                 if query in NaverCacheDriver._categories:
                     count = i
                 else:
                     return count
 
-        for i in range(1, 20):
+        for i in range(1, 99):
             index_ls[depth] += 1
             query = NaverCacheDriver.encode(list(index_ls))
             if query in NaverCacheDriver._categories:
@@ -149,7 +149,6 @@ class NaverCacheDriver(BaseDriver):
         for i in range(len(elements)):
             code = NaverCacheDriver._change_last_index(code, i + 1)
             category_dic[code] = elements[i].text
-            print(f'{code}: {NaverCacheDriver._categories[code]}')
 
         code = code[0:len(code) - 3]
         self._driver.find_element_by_xpath(NaverXpath.get_combobox(depth)).click()

@@ -203,11 +203,12 @@ class MainWindow(QMainWindow, main_window):
         if filedir[0] == '':
             return
 
+        filename = filedir[0]
+        if '.xlsx' not in filedir[0]:
+            filename += '.xlsx'
+
         keywords_df = pd.DataFrame(keywords_dic)
-        if platform.system() == 'Linux':
-            keywords_df.to_excel(filedir[0] + '.xlsx', index=False)
-        else:
-            keywords_df.to_excel(filedir[0], index=False)
+        keywords_df.to_excel(filename, index=False)
 
     def _create_keywords_miner(self, index: Tuple[int, int, int, int]) -> KeywordsWorker:
         if self._miner is None:
