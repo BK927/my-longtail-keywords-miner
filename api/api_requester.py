@@ -8,7 +8,6 @@ from urllib.parse import urlencode
 
 from api import signaturehelper
 from ini_reader import *
-from ezlogger import EzLogger
 
 
 class NaverApi:
@@ -39,30 +38,26 @@ class NaverApi:
                                                                          IniReader.SECRET_KEY,
                                                                          IniReader.CUSTOMER_ID), timeout=NaverApi.TIMEOUT)
             except Exception as e:
-                EzLogger.logfile(logging.WARNING, str(e) + f',get_monthly_qc_cnt:{url}')
+                logging.debug(logging.WARNING, str(e) + f',get_monthly_qc_cnt:{url}')
                 if tries < (NaverApi.MAX_RETRY - 1):
                     time.sleep(NaverApi.CODE429_WAIT_TIME)
                     continue
                 else:
-                    EzLogger.logfile(logging.WARNING,
-                                     f'Has tried {NaverApi.MAX_RETRY} times to access url {url}, all failed!')
+                    logging.debug(f'Has tried {NaverApi.MAX_RETRY} times to access url {url}, all failed!')
                     return -1
             if int(response.status_code) == 200:
                 break
             if int(response.status_code) == 429:
-                EzLogger.logfile(logging.WARNING,
-                                 f'keyword:{keyword} try:{tries} get_monthly_qc_cnt got {str(response.status_code)}')
+                logging.debug(f'keyword:{keyword} try:{tries} get_monthly_qc_cnt got {str(response.status_code)}')
                 time.sleep(NaverApi.CODE429_WAIT_TIME)
                 continue
             if not int(response.status_code) == 200:
-                EzLogger.logfile(logging.WARNING,
-                                 f'keyword:{keyword} try:{tries} get_monthly_qc_cnt got {str(response.status_code)}')
+                logging.debug(f'keyword:{keyword} try:{tries} get_monthly_qc_cnt got {str(response.status_code)}')
                 time.sleep(0.5)
                 continue
 
         if not int(response.status_code) == 200:
-            EzLogger.logfile(logging.WARNING,
-                             f'get_monthly_qc_cnt: Has tried {NaverApi.MAX_RETRY} times to access url {url}, but got {str(response.status_code)}')
+            logging.debug(f'get_monthly_qc_cnt: Has tried {NaverApi.MAX_RETRY} times to access url {url}, but got {str(response.status_code)}')
             return -1
 
         # 원하는 키워드만 딕셔너리로 가져오기
@@ -97,30 +92,26 @@ class NaverApi:
                 # 질의 json->파이썬 객체로 파싱
                 response = urlopen(request, timeout=NaverApi.TIMEOUT)
             except Exception as e:
-                EzLogger.logfile(logging.WARNING, str(e) + f',get_quantity_of_items:{url}')
+                logging.debug(f',get_quantity_of_items:{url}')
                 if tries < (NaverApi.MAX_RETRY - 1):
                     continue
                 else:
-                    EzLogger.logfile(logging.WARNING,
-                                     f'Has tried {NaverApi.MAX_RETRY} times to access url {url}, all failed!')
+                    logging.debug(f'Has tried {NaverApi.MAX_RETRY} times to access url {url}, all failed!')
                     return -1
 
             if int(response.getcode()) == 200:
                 break
             if int(response.getcode()) == 429:
-                EzLogger.logfile(logging.WARNING,
-                                 f'keyword:{keyword} try:{tries} get_quantity_of_items got {str(response.getcode())}')
+                logging.debug(f'keyword:{keyword} try:{tries} get_quantity_of_items got {str(response.getcode())}')
                 time.sleep(NaverApi.CODE429_WAIT_TIME)
                 continue
             if not int(response.getcode()) == 200:
-                EzLogger.logfile(logging.WARNING,
-                                 f'keyword:{keyword} try:{tries} get_quantity_of_items got {str(response.getcode())}')
+                logging.debug(f'keyword:{keyword} try:{tries} get_quantity_of_items got {str(response.getcode())}')
                 time.sleep(0.5)
                 continue
 
         if not int(response.getcode()) == 200:
-            EzLogger.logfile(logging.WARNING,
-                             f'get_quantity_of_items: Has tried {NaverApi.MAX_RETRY} times to access url {url}, but got {str(response.getcode())}')
+            logging.debug(f'get_quantity_of_items: Has tried {NaverApi.MAX_RETRY} times to access url {url}, but got {str(response.getcode())}')
             return -1
 
         return json.loads(response.read().decode('utf-8'))['total']

@@ -16,6 +16,9 @@
   <property name="windowTitle">
    <string>롱테일 키워드 채굴기</string>
   </property>
+  <property name="locale">
+   <locale language="Korean" country="SouthKorea"/>
+  </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QGridLayout" name="gridLayout_2">
     <item row="0" column="0">
@@ -73,7 +76,7 @@
         <item>
          <widget class="QComboBox" name="category1">
           <property name="sizePolicy">
-           <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+           <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
             <horstretch>0</horstretch>
             <verstretch>0</verstretch>
            </sizepolicy>
@@ -92,16 +95,18 @@
           </property>
           <property name="font">
            <font>
-            <pointsize>9</pointsize>
+            <pointsize>12</pointsize>
+            <weight>75</weight>
+            <bold>true</bold>
            </font>
           </property>
           <property name="maxVisibleItems">
-           <number>13</number>
+           <number>20</number>
           </property>
           <property name="frame">
            <bool>true</bool>
           </property>
-          <property name="category" stdset="0">
+          <property name="depth" stdset="0">
            <number>1</number>
           </property>
          </widget>
@@ -109,7 +114,7 @@
         <item>
          <widget class="QComboBox" name="category2">
           <property name="sizePolicy">
-           <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+           <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
             <horstretch>0</horstretch>
             <verstretch>0</verstretch>
            </sizepolicy>
@@ -122,13 +127,15 @@
           </property>
           <property name="font">
            <font>
-            <pointsize>9</pointsize>
+            <pointsize>12</pointsize>
+            <weight>75</weight>
+            <bold>true</bold>
            </font>
           </property>
           <property name="maxVisibleItems">
-           <number>25</number>
+           <number>30</number>
           </property>
-          <property name="category" stdset="0">
+          <property name="depth" stdset="0">
            <number>2</number>
           </property>
          </widget>
@@ -139,7 +146,7 @@
            <bool>true</bool>
           </property>
           <property name="sizePolicy">
-           <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+           <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
             <horstretch>0</horstretch>
             <verstretch>0</verstretch>
            </sizepolicy>
@@ -152,13 +159,15 @@
           </property>
           <property name="font">
            <font>
-            <pointsize>9</pointsize>
+            <pointsize>12</pointsize>
+            <weight>75</weight>
+            <bold>true</bold>
            </font>
           </property>
           <property name="maxVisibleItems">
-           <number>25</number>
+           <number>30</number>
           </property>
-          <property name="category" stdset="0">
+          <property name="depth" stdset="0">
            <number>3</number>
           </property>
          </widget>
@@ -166,7 +175,7 @@
         <item>
          <widget class="QComboBox" name="category4">
           <property name="sizePolicy">
-           <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+           <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
             <horstretch>0</horstretch>
             <verstretch>0</verstretch>
            </sizepolicy>
@@ -185,16 +194,55 @@
           </property>
           <property name="font">
            <font>
-            <pointsize>9</pointsize>
+            <pointsize>12</pointsize>
+            <weight>75</weight>
+            <bold>true</bold>
            </font>
           </property>
           <property name="maxVisibleItems">
-           <number>25</number>
+           <number>30</number>
           </property>
-          <property name="category" stdset="0">
+          <property name="depth" stdset="0">
            <number>4</number>
           </property>
          </widget>
+        </item>
+        <item>
+         <layout class="QVBoxLayout" name="verticalLayout_2">
+          <item>
+           <widget class="QCheckBox" name="RecursivieChkBox">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="text">
+             <string>하위 카테고리도 수집</string>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="coupangChkBox">
+            <property name="text">
+             <string>쿠팡 수집</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="enuriChkBox">
+            <property name="enabled">
+             <bool>true</bool>
+            </property>
+            <property name="text">
+             <string>에누리 수집</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
         </item>
        </layout>
       </item>
@@ -248,13 +296,13 @@
          <number>0</number>
         </property>
         <property name="columnCount">
-         <number>5</number>
+         <number>6</number>
         </property>
         <attribute name="horizontalHeaderCascadingSectionResizes">
          <bool>false</bool>
         </attribute>
         <attribute name="horizontalHeaderDefaultSectionSize">
-         <number>193</number>
+         <number>166</number>
         </attribute>
         <attribute name="horizontalHeaderShowSortIndicator" stdset="0">
          <bool>false</bool>
@@ -293,6 +341,11 @@
           <string>쿠팡 상품 수</string>
          </property>
         </column>
+        <column>
+         <property name="text">
+          <string>에누리 상품 수</string>
+         </property>
+        </column>
        </widget>
       </item>
       <item>
@@ -319,7 +372,7 @@
         <item>
          <widget class="QLabel" name="label">
           <property name="text">
-           <string>예상 대기시간: </string>
+           <string>예상 대기 시간</string>
           </property>
           <property name="alignment">
            <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -360,7 +413,7 @@
      <x>0</x>
      <y>0</y>
      <width>1023</width>
-     <height>26</height>
+     <height>20</height>
     </rect>
    </property>
   </widget>

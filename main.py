@@ -1,18 +1,37 @@
+import logging
+import os
+import platform
 import sys
+from enum import Enum
 
-from PyQt5.QtCore import pyqtSlot, pyqtSignal
+from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtWidgets import *
 from PyQt5 import uic
 import pandas as pd
+from typing import List, Tuple
 
-from category_enum import Category
-from keywords_miner import KeywordsMiner
+if not os.path.exists('./log'):
+    os.mkdir('./log')
+
+from crawler.crawling_driver import CrawlingDriver
+from worker.category_name_worker import CategoryNameWorker
+from worker.keywords_worker import KeywordsWorker
+from crawler.naver_cache_driver import NaverCacheDriver
 
 main_window = uic.loadUiType('./ui/main_window.ui')[0]
-debug_window = uic.loadUiType('./ui/debug_window.ui')
 
+logging.basicConfig(filename='./log/debug.log',
+                    filemode='w',
+                    format='%(asctime)s - %(thread)d - %(levelname)s - %(name)s:%(lineno)d %(message)s',
+                    datefmt='%H:%M:%S',
+                    level=logging.DEBUG)
 
-class MyWindow(QMainWindow, main_window):
+class State(Enum):
+    Idle = 0
+    Crawling = 1
+    Caching = 2
+
+class MainWindow(QMainWindow, main_window):
     stop_signal = pyqtSignal()
 
     def __init__(self):
@@ -20,128 +39,156 @@ class MyWindow(QMainWindow, main_window):
         self.setupUi(self)
 
         # Properties
-        self._keywords_miner = KeywordsMiner(parent=self)
-        self.__isCrawling = False
+        self._crawling_driver = CrawlingDriver(crawl_coupang=self.coupangChkBox.isChecked())
+        self._category_cache_driver = NaverCacheDriver()
+        self._comboboxes: List[QComboBox, ...] = [self.category1, self.category2, self.category3, self.category4]
+        self.__is_crawling = False
+        self._miner = None
 
         # initiate slots
-        self._keywords_miner.update.connect(self._update)
-        self._keywords_miner.save_crawled_data.connect(self.__save_datatable)
-        self._keywords_miner.crawling_finished.connect(self.stop_crawling)
+        self.crawlBtn.clicked.connect(self.crawlBtn_clicked)
+        self.stopBtn.clicked.connect(self.stopBtn_clicked)
+        self.coupangChkBox.stateChanged.connect(lambda: setattr(self._crawling_driver, 'crawl_coupang', self.coupangChkBox.isChecked()))
+        self.enuriChkBox.stateChanged.connect(lambda: setattr(self._crawling_driver, 'crawl_enuri', self.enuriChkBox.isChecked()))
+        self.category1.activated.connect(lambda index: self.category_activated(index, self.category2))
+        self.category2.activated.connect(lambda index: self.category_activated(index, self.category3))
+        self.category3.activated.connect(lambda index: self.category_activated(index, self.category4))
 
-        self.crawlBtn.clicked.connect(self._crawlBtn_clicked)
-        self.stopBtn.clicked.connect(self._stopBtn_clicked)
-        self.category1.activated.connect(lambda index: self._category_activated(index, self.category1))
-        self.category2.activated.connect(lambda index: self._category_activated(index, self.category2))
-        self.category3.activated.connect(lambda index: self._category_activated(index, self.category3))
-        self.category4.activated.connect(lambda index: self._category_activated(index, self.category4))
-
-        # initiate comboboxes
-        self.category1.addItem('--1분류--')
-        self.category2.addItem('--2분류--')
-        self.category3.addItem('--3분류--')
-        self.category4.addItem('--4분류--')
-
-        self._load_category_items(Category.category1, self.category1)
-
-    def __del__(self):
-        self._keywords_miner.quit()
+        # category name loading
+        self._cache_worker = CategoryNameWorker(5, parent=self)
+        if self._cache_worker.is_cache_available():
+            self._initiate_comboboxes()
+        else:
+            self._cache_worker.set_delay(0.4)
+            self._start_category_caching()
+            QMessageBox.about(self, '알림', '카테고리 데이터를 다운로드합니다. 해당 작업은 프로그램 첫실행에만 실행됩니다.')
+        self._cache_worker.crawling_finished.connect(self._finished_category_caching)
+        self._cache_worker.start()
 
     @property
     def is_crawling(self):
-        return self.__isCrawling
+        return self.__is_crawling
 
     @is_crawling.setter
     def is_crawling(self, value):
-        self.__isCrawling = value
-
+        self.__is_crawling = value
         if value:
-            self.stopBtn.setEnabled(True)
-            self.category1.setEnabled(False)
-            self.category2.setEnabled(False)
-            self.category3.setEnabled(False)
-            self.category4.setEnabled(False)
-            self.crawlBtn.setEnabled(False)
-            self.progressBar.setMaximum(0)
+            self._set_state(State.Crawling)
         else:
-            self.stopBtn.setEnabled(False)
-            self.category1.setEnabled(True)
-            self.category2.setEnabled(True)
-            self.category3.setEnabled(True)
-            self.category4.setEnabled(True)
-            self.crawlBtn.setEnabled(True)
-            self.progressBar.setMaximum(1)
+            self._set_state(State.Idle)
+
+    def category_activated(self, index: int, next_comboBox: QComboBox):
+        if index == 0:
+            return
+
+        for c in self._comboboxes:
+            if c.property('depth') > next_comboBox.property('depth') - 1:
+                self._reset_combobox(c)
+            if c.property('depth') > next_comboBox.property('depth'):
+                c.setEnabled(False)
+            else:
+                c.setEnabled(True)
+
+        ls = self._cache_worker.get_next_category_list(
+            (self.category1.currentIndex(), self.category2.currentIndex(),
+             self.category3.currentIndex(), self.category4.currentIndex()))
+
+        for item in ls:
+            next_comboBox.addItem(item)
+        if not ls:
+            next_comboBox.setEnabled(False)
+
+    def crawlBtn_clicked(self):
+        if self.category1.currentIndex() == 0:
+            QMessageBox.about(self, '에러', '최소 한 분류 이상을 선택해야 크롤링이 가능합니다')
+            return
+        self.dataTable.setRowCount(0)
+        self.is_crawling = True
+        keywords_miner = self._create_keywords_miner(self._convert_comboboxes_to_indexes())
+        keywords_miner.start()
+
+    def stopBtn_clicked(self):
+        self._miner.stop()
+        self.stopBtn.setEnabled(False)
 
     def stop_crawling(self):
         self.is_crawling = False
 
-    def _load_category_items(self, category: Category, comboBox: QComboBox):
-        self._reset_combobox(comboBox)
+    def _set_state(self, state: State):
+        comboboxes = self.findChildren(QComboBox)
+        checkboxes = self.findChildren(QCheckBox)
+        if state == State.Idle:
+            for c in comboboxes:
+                c.setEnabled(True)
+            for c in checkboxes:
+                c.setEnabled(True)
+            self.crawlBtn.setEnabled(True)
+            self.stopBtn.setEnabled(False)
+            self.progressBar.setMaximum(1)
+        elif state == State.Crawling:
+            for c in comboboxes:
+                c.setEnabled(False)
+            for c in checkboxes:
+                c.setEnabled(False)
+            self.crawlBtn.setEnabled(False)
+            self.stopBtn.setEnabled(True)
+            self.progressBar.setMaximum(0)
+        elif state == State.Caching:
+            for c in comboboxes:
+                c.setEnabled(False)
+            for c in checkboxes:
+                c.setEnabled(False)
+            self.crawlBtn.setEnabled(False)
+            self.stopBtn.setEnabled(False)
+            self.progressBar.setMaximum(0)
 
-        ls = self._keywords_miner.get_naver_category_list(category)
-        for item in ls:
-            comboBox.addItem(item)
-
-        comboBox.setCurrentIndex(0)
-
-    def _category_activated(self, index: int, comboBox: QComboBox):
-        if index <= 0:
-            return
-
-        category = Category(comboBox.property('category'))
-        self._keywords_miner.click_item(category, index)
-
-        next_combobox = self._get_next_combobox(comboBox)
-
-        if category.value < 4:
-            self._load_category_items(Category(category.value + 1), next_combobox)
-
-        for c in self._get_combobox_list():
-            if c.property('category') > next_combobox.property('category'):
-                self._reset_combobox(c)
-
-    def _get_combobox_list(self):
-        return [self.category1, self.category2, self.category3, self.category4]
-
-    def _get_next_combobox(self, comboBox: QComboBox) -> QComboBox:
-        ls = self._get_combobox_list()
-        index = ls.index(comboBox)
-        return ls[index + 1]
+    def _initiate_comboboxes(self):
+        for combobox in self._comboboxes:
+            self._reset_combobox(combobox)
+        self.category_activated(-1, self.category1)
 
     def _reset_combobox(self, comboBox: QComboBox):
         comboBox.clear()
-        i = comboBox.property('category')
+        i = comboBox.property('depth')
         comboBox.addItem(f'--{str(i)}분류--')
 
-    def _update(self, category: str, keyword: str, qc_cnt: int, num_of_naver: int, num_of_coupang: int, delay: float):
-        self._add_row_to_table(category, keyword, qc_cnt, num_of_naver, num_of_coupang)
+    def _convert_comboboxes_to_indexes(self) -> Tuple[int, int, int, int]:
+        indexes = []
+        for c in self._comboboxes:
+            indexes.append(c.currentIndex())
+        return tuple(indexes)
+
+    def _start_category_caching(self):
+        self._set_state(State.Caching)
+
+    def _finished_category_caching(self):
+        if not self.is_crawling:
+            self._set_state(State.Idle)
+            QMessageBox.about(self, '', '카테고리 다운로드를 완료 했습니다.')
+            self._initiate_comboboxes()
+
+    # TODO: Add enuri function
+    def _update(self, category: str, keyword: str, qc_cnt: int, num_of_naver: int, num_of_coupang: int, num_of_enuri: int, delay: float) -> None:
+        self._add_row_to_table(category, keyword, qc_cnt, num_of_naver, num_of_coupang, num_of_enuri)
         t = round(delay, 2)
         self.delayTimeLabel.setText(str(t))
 
-    def _add_row_to_table(self, category: str, keyword: str, qc_cnt: int, num_of_naver: int, num_of_coupang: int):
+    def _add_row_to_table(self, category: str, keyword: str, qc_cnt: int, naver_products: int, coupang_products: int, enuri_products: int) -> None:
         i = self.dataTable.rowCount()
         self.dataTable.insertRow(i)
 
         self.dataTable.setItem(i, 0, QTableWidgetItem(category))
         self.dataTable.setItem(i, 1, QTableWidgetItem(keyword))
         self.dataTable.setItem(i, 2, QTableWidgetItem(str(qc_cnt)))
-        self.dataTable.setItem(i, 3, QTableWidgetItem(str(num_of_naver)))
-        self.dataTable.setItem(i, 4, QTableWidgetItem(str(num_of_coupang)))
+        self.dataTable.setItem(i, 3, QTableWidgetItem(str(naver_products)))
+        if self.coupangChkBox.isChecked():
+            self.dataTable.setItem(i, 4, QTableWidgetItem(str(coupang_products)))
+        if self.enuriChkBox.isChecked():
+            self.dataTable.setItem(i, 5, QTableWidgetItem(str(enuri_products)))
+        self.dataTable.scrollToBottom()
 
-    def _crawlBtn_clicked(self):
-        if self.category1.currentIndex() == 0:
-            QMessageBox.about(self, '에러', '최소 한 분류 이상을 선택해야 크롤링이 가능합니다')
-            return
-
-        self.is_crawling = True
-
-        self._keywords_miner.isRun = True
-        self._keywords_miner.start()
-
-    def _stopBtn_clicked(self):
-        self.stop_signal.emit()
-        self.stopBtn.setEnabled(False)
-
-    def __save_datatable(self, keywords_dic):
+    def _save_datatable(self, keywords_dic) -> None:
+        self._miner = None
         min_length = len(keywords_dic['분류'])
 
         for ls in keywords_dic.values():
@@ -152,14 +199,32 @@ class MyWindow(QMainWindow, main_window):
             del ls[min_length:]
 
         filedir = QFileDialog.getSaveFileName(self, 'Save file', './', 'Exel File(*.xlsx)')
-        keywords_df = pd.DataFrame(keywords_dic)
-        keywords_df.to_excel(filedir[0] + '.xlsx', index=False)
 
-        self._keywords_miner.isRun = False
+        if filedir[0] == '':
+            return
+
+        filename = filedir[0]
+        if '.xlsx' not in filedir[0]:
+            filename += '.xlsx'
+
+        keywords_df = pd.DataFrame(keywords_dic)
+        keywords_df.to_excel(filename, index=False)
+
+    def _create_keywords_miner(self, index: Tuple[int, int, int, int]) -> KeywordsWorker:
+        if self._miner is None:
+            self._miner = KeywordsWorker(self._crawling_driver, index,
+                                         recursive=self.RecursivieChkBox.isChecked(), parent=self)
+            self._miner.update.connect(self._update)
+            self._miner.save_crawled_data.connect(self._save_datatable)
+            self._miner.crawling_finished.connect(self.stop_crawling)
+        return self._miner
+
+    def _err_messagebox(self, message: str):
+        QMessageBox.critical(self, '오류', '치명적 오류 발생: ' + message)
 
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    myWindow = MyWindow()
-    myWindow.show()
+    main_window = MainWindow()
+    main_window.show()
     app.exec_()

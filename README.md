@@ -1,5 +1,5 @@
 # My longtail keywords miner
-A crossplatform crawler for Naver storefarm service and Coupang.
+A crossplatform crawler for Naver storefarm service, Coupang and Enuri.
 
 ## Mendatory
 Before using this program, you have to get Naver api licenses.</br>
@@ -23,9 +23,9 @@ CLIENT_ID = </br>
 CLIENT_SECRET = </br>
 ### [DRIVER]</br>
 DRIVER_PATH = C:\chromedriver</br>
-HEADLESS = TRUE
-NO_SANDBOX = TRUE
+HEADLESS = TRUE</br>
 
 ## Usage
 Crawled datas will be saved in Excel file(*.xlxs)</br>
-You can specify a path and file name before you save.
+You can specify a path and file name before you save.</br>
+Coupang and Enuri don't provide api and allow crawling bot. So those options gonna take much longer time than no option.
